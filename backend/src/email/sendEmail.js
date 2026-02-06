@@ -12,8 +12,12 @@ function getTransporter() {
   if (!user || !pass) {
     throw new Error('EMAIL_USER and EMAIL_PASS required for email');
   }
+  // Port 587: many providers (e.g. Hetzner) block outbound 465
   transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
+    requireTLS: true,
     auth: { user, pass },
   });
   return transporter;

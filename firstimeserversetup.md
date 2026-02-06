@@ -35,7 +35,9 @@ git clone -b hetzner https://github.com/UkoHegdu/recordsw.git .
 nano ~/app/.env
 ```
 
-Add at least: `NEON_DB_CONNECTION_STRING`, `JWT_SECRET`, and the Trackmania API vars (`LEAD_API`, `AUTH_API_URL`, `AUTHORIZATION`, `USER_AGENT`, `OCLIENT_ID`, `OCLIENT_SECRET`). See `backend/ENV.md`. Save: Ctrl+O, Enter, Ctrl+X.
+Add at least: `NEON_DB_CONNECTION_STRING`, `JWT_SECRET`, and the Trackmania API vars (`LEAD_API`, `AUTH_API_URL`, `AUTHORIZATION`, `USER_AGENT`, `OCLIENT_ID`, `OCLIENT_SECRET`). Optional: `CRON_SECRET` (for daily cron), `EMAIL_USER`, `EMAIL_PASS`. See `backend/ENV.md`. Save: Ctrl+O, Enter, Ctrl+X.
+
+You do **not** need `VITE_BACKEND_URL` in this `.env`: production uses `compose.prod.yaml`, which builds the frontend with same-origin (`VITE_BACKEND_URL=""`) so the app calls `/api` on the same host.
 
 ---
 
