@@ -1,9 +1,9 @@
 // frontend/src/auth.ts
 import axios from 'axios';
 
-const backendUrl = import.meta.env.VITE_BACKEND_URL;
+const backendUrl = import.meta.env.VITE_BACKEND_URL ?? "";
 
-// Create axios instance for API calls
+// Create axios instance for API calls (empty baseURL = same-origin, for prod behind reverse proxy)
 const apiClient = axios.create({
     baseURL: backendUrl,
 });
@@ -16,7 +16,7 @@ const refreshToken = async (): Promise<boolean> => {
             return false;
         }
 
-        const response = await axios.post(`${backendUrl}/api/v1/users/refresh`, {
+        const response = await axios.post(`${backendUrl || ""}/api/v1/users/refresh`, {
             refresh_token: refreshTokenValue
         });
 

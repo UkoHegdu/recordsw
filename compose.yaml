@@ -1,53 +1,21 @@
-version: '3.8'
+# Local Docker run with Neon (no local Postgres).
+# Create .env in repo root with NEON_DB_CONNECTION_STRING, JWT_SECRET, etc. (see backend/ENV.md).
 
 services:
-  postgres:
-    image: postgres:15-alpine
-    environment:
-      POSTGRES_USER: ${PGUSER}
-      POSTGRES_PASSWORD: ${PGPASSWORD}
-      POSTGRES_DB: ${PGDATABASE}
-    volumes:
-      - pg_data:/var/lib/postgresql/data
-      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql  # Runs only on first startup, creates the alerts table
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
   backend:
     build: ./backend
-    environment:
-      PORT: 3000
-      PGUSER: ${PGUSER}
-      PGPASSWORD: ${PGPASSWORD}
-      PGDATABASE: ${PGDATABASE}
-      PGHOST: postgres
-      PGPORT: 5432
-      EMAIL_USER: ${EMAIL_USER}
-      EMAIL_PASS: ${EMAIL_PASS}
-      AUTH_API_URL: ${AUTH_API_URL}
-      LEAD_API: ${LEAD_API}
-      ACCOUNT_API: ${ACCOUNT_API}
-      AUTHORIZATION: ${AUTHORIZATION}
-      USER_AGENT: ${USER_AGENT}
-      JWT_SECRET: ${JWT_SECRET}
-      OCLIENT_ID: ${OCLIENT_ID}
-      OCLIENT_SECRET: ${OCLIENT_SECRET}
-    depends_on:
-      postgres:
-        condition: service_healthy
+    env_file: .env
     ports:
       - "3000:3000"
+    restart: unless-stopped
 
   frontend:
     build:
       context: ./frontend
       args:
-        VITE_BACKEND_URL: http://13.53.122.130:3000
+        VITE_BACKEND_URL: http://localhost:3000
     ports:
       - "80:80"
-
-volumes:
-  pg_data:
+    depends_on:
+      - backend
+    restart: unless-stopped
