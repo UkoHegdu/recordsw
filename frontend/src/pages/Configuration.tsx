@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Users, MapPin, Bell, Shield, X, RefreshCw } from 'lucide-react';
+import { Settings, Users, Shield, X, RefreshCw } from 'lucide-react';
 import apiClient from '../auth';
 
 interface ConfigValue {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, MapPin, Bell, Shield, X, RefreshCw, CheckCircle, AlertTriangle, XCircle, Clock, BarChart3, MessageSquare } from 'lucide-react';
+import { Users, Bell, X, RefreshCw, CheckCircle, AlertTriangle, XCircle, Clock, BarChart3, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
 import apiClient, { isAdmin } from '../auth';
 
