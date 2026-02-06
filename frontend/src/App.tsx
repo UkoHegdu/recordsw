@@ -1,5 +1,5 @@
 import React, { useState, useEffect, ReactNode } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import Sidebar from './components/Layout/sidebar';
 import EnvironmentBanner from './components/EnvironmentBanner';
@@ -15,7 +15,8 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Admin from './pages/Admin';
 
-const App: React.FC = () => {
+const AppLayout: React.FC = () => {
+    const navigate = useNavigate();
     const [isLoggedIn, setIsLoggedIn] = useState(false);
 
     useEffect(() => {
@@ -28,6 +29,7 @@ const App: React.FC = () => {
         localStorage.removeItem('refresh_token');
         localStorage.removeItem('token'); // Clean up old key
         setIsLoggedIn(false);
+        navigate('/');
     };
 
     const PrivateRoute = ({ children }: { children: ReactNode }) => {
@@ -41,13 +43,11 @@ const App: React.FC = () => {
     };
 
     return (
-        <Router>
-            <div className={`min-h-screen bg-gradient-to-br from-background via-background to-card ${isTestEnvironment() ? 'test-environment' : ''}`}>
-                <EnvironmentBanner />
-                <div className="flex">
-                    <Sidebar isLoggedIn={isLoggedIn} onLogout={handleLogout} />
-
-                    <main className="flex-1 min-h-screen">
+        <div className={`min-h-screen bg-gradient-to-br from-background via-background to-card ${isTestEnvironment() ? 'test-environment' : ''}`}>
+            <EnvironmentBanner />
+            <div className="flex">
+                <Sidebar isLoggedIn={isLoggedIn} onLogout={handleLogout} />
+                <main className="flex-1 min-h-screen">
                         <Routes>
                             <Route path="/" element={<Landing />} />
                             <Route path="/login" element={<Login setIsLoggedIn={setIsLoggedIn} />} />
@@ -86,11 +86,16 @@ const App: React.FC = () => {
                             />
                         </Routes>
                     </main>
-                </div>
             </div>
             <Toaster position="top-right" />
-        </Router>
+        </div>
     );
 };
+
+const App: React.FC = () => (
+    <Router>
+        <AppLayout />
+    </Router>
+);
 
 export default App;

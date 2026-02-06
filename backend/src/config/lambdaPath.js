@@ -34,7 +34,8 @@ function getHandler(moduleName) {
     testAdvanced: 'testAdvanced.js',
     submitFeedback: 'submitFeedback.js',
     getFeedback: 'getFeedback.js',
-    markFeedbackRead: 'markFeedbackRead.js'
+    markFeedbackRead: 'markFeedbackRead.js',
+    deleteFeedback: 'deleteFeedback.js'
   };
   const file = fileMap[moduleName] || `${moduleName}.js`;
   const mod = require(path.join(LAMBDA_DIR, file));

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Bell, X, RefreshCw, CheckCircle, AlertTriangle, XCircle, Clock, BarChart3, MessageSquare } from 'lucide-react';
+import { Users, Bell, X, RefreshCw, CheckCircle, AlertTriangle, XCircle, Clock, BarChart3, MessageSquare, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import apiClient, { isAdmin } from '../auth';
 
@@ -173,6 +173,18 @@ const Admin: React.FC = () => {
         } catch (error) {
             console.error('Error marking feedback as read:', error);
             toast.error('Failed to mark as read');
+        }
+    };
+
+    const deleteFeedback = async (id: number) => {
+        if (!window.confirm('Delete this feedback?')) return;
+        try {
+            await apiClient.delete(`/api/v1/feedback/${id}`);
+            setFeedback(prev => prev.filter(item => item.id !== id));
+            toast.success('Feedback deleted');
+        } catch (error) {
+            console.error('Error deleting feedback:', error);
+            toast.error('Failed to delete feedback');
         }
     };
 
@@ -1018,6 +1030,13 @@ const Admin: React.FC = () => {
                                                         Mark as read
                                                     </button>
                                                 )}
+                                                <button
+                                                    onClick={() => deleteFeedback(item.id)}
+                                                    className="p-1.5 rounded hover:bg-destructive/20 text-destructive"
+                                                    title="Delete"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
                                             </div>
                                         </div>
                                         <div className="bg-muted/50 p-4 rounded-lg">

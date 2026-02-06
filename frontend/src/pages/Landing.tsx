@@ -24,7 +24,7 @@ const Landing: React.FC = () => {
         {
             title: "Driver Notifications",
             icon: MapPin,
-            description: "Add maps where you hold a top 5 time and get notified when someone beats your time. Track your position and personal best. Notifications are sent when your record is beaten or when you drop in the rankings."
+            description: "Add maps where you hold a top 5 time and get notified when someone beats your time. Track your position and personal best. Notifications are sent when your record is beaten."
         }
     ];
 
