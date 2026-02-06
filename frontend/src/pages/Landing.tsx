@@ -36,35 +36,23 @@ const Landing: React.FC = () => {
     useEffect(() => {
         const token = localStorage.getItem('access_token');
         setIsLoggedIn(!!token);
-
-        if (token) {
-            loadSiteStats();
-        }
+        loadSiteStats();
     }, []);
 
     const loadSiteStats = async () => {
         try {
             setStatsLoading(true);
-            const response = await apiClient.get('/api/v1/admin/daily-overview');
-            // Safely access site_stats with fallback
-            const siteStats = response.data?.site_stats || response.data;
+            const response = await apiClient.get('/api/v1/stats');
+            const siteStats = response.data;
             if (siteStats && typeof siteStats === 'object') {
                 setStats({
-                    total_users: siteStats.total_users || 0,
-                    total_alerts_sent: siteStats.total_alerts_sent || 0,
-                    total_driver_notifications: siteStats.total_driver_notifications || 0
+                    total_users: siteStats.total_users ?? 0,
+                    total_alerts_sent: siteStats.total_alerts_sent ?? 0,
+                    total_driver_notifications: siteStats.total_driver_notifications ?? 0
                 });
-            } else {
-                throw new Error('Invalid response structure');
             }
         } catch (error) {
             console.error('Error loading site stats:', error);
-            // Use mock data if API fails
-            setStats({
-                total_users: 42,
-                total_alerts_sent: 128,
-                total_driver_notifications: 67
-            });
         } finally {
             setStatsLoading(false);
         }
@@ -102,6 +90,8 @@ const Landing: React.FC = () => {
                 const axiosError = error as { response?: { status?: number; data?: { error?: string } } };
                 if (axiosError.response?.status === 429) {
                     toast.error('Rate limit exceeded. Please wait before submitting more feedback.');
+                } else if (axiosError.response?.status === 503) {
+                    toast.error(axiosError.response.data?.error || 'Feedback submission is temporarily unavailable. Please try again later.');
                 } else if (axiosError.response?.status === 400) {
                     toast.error(axiosError.response.data?.error || 'Invalid feedback. Please check your message and try again.');
                 } else {

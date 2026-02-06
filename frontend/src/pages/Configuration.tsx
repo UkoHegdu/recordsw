@@ -48,10 +48,7 @@ const Admin: React.FC = () => {
             console.error('Error loading configs:', error);
             // Fallback to mock data if API fails
             const mockConfigs: ConfigValue[] = [
-                { config_key: 'max_maps_per_user', config_value: '200', description: 'Maximum number of maps a user can add to their watch list' },
-                { config_key: 'max_driver_notifications', config_value: '200', description: 'Maximum number of driver notifications per user (optimized with position API)' },
-                { config_key: 'max_users_registration', config_value: '100', description: 'Maximum number of users that can register on the site' },
-                { config_key: 'max_new_records_per_map', config_value: '20', description: 'Maximum new records per map before truncating in email' }
+                { config_key: 'max_users_registration', config_value: '200', description: 'Maximum number of users that can register on the site' }
             ];
             setConfigs(mockConfigs);
         }
@@ -219,7 +216,7 @@ const Admin: React.FC = () => {
                             <h2 className="text-xl font-semibold text-foreground">User Limits</h2>
                         </div>
                         <p className="text-muted-foreground mb-4">
-                            Configure maximum limits for user registrations and map additions.
+                            Configure maximum number of users that can register on the site.
                         </p>
                         <button
                             onClick={() => openModal('max_users_registration')}
@@ -229,67 +226,6 @@ const Admin: React.FC = () => {
                             Configure
                         </button>
                     </div>
-
-                    {/* Map Limits Configuration */}
-                    <div className="racing-card">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="p-2 bg-gradient-to-br from-green-500 to-green-600 rounded-lg">
-                                <MapPin className="w-5 h-5 text-white" />
-                            </div>
-                            <h2 className="text-xl font-semibold text-foreground">Map Limits</h2>
-                        </div>
-                        <p className="text-muted-foreground mb-4">
-                            Set maximum number of maps users can add to their watch lists.
-                        </p>
-                        <button
-                            onClick={() => openModal('max_maps_per_user')}
-                            className="btn-racing w-full flex items-center justify-center gap-2"
-                        >
-                            <Settings size={20} />
-                            Configure
-                        </button>
-                    </div>
-
-                    {/* Notification Limits Configuration */}
-                    <div className="racing-card">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="p-2 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg">
-                                <Bell className="w-5 h-5 text-white" />
-                            </div>
-                            <h2 className="text-xl font-semibold text-foreground">Notification Limits</h2>
-                        </div>
-                        <p className="text-muted-foreground mb-4">
-                            Configure driver notification limits and email settings.
-                        </p>
-                        <button
-                            onClick={() => openModal('max_driver_notifications')}
-                            className="btn-racing w-full flex items-center justify-center gap-2"
-                        >
-                            <Settings size={20} />
-                            Configure
-                        </button>
-                    </div>
-
-                    {/* Popularity Limits Configuration */}
-                    <div className="racing-card">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="p-2 bg-gradient-to-br from-red-500 to-red-600 rounded-lg">
-                                <Shield className="w-5 h-5 text-white" />
-                            </div>
-                            <h2 className="text-xl font-semibold text-foreground">Popularity Limits</h2>
-                        </div>
-                        <p className="text-sm text-muted-foreground mb-4">
-                            Configure limits for popular maps to prevent email spam and API overload.
-                        </p>
-                        <button
-                            onClick={() => openModal('max_new_records_per_map')}
-                            className="btn-racing w-full flex items-center justify-center gap-2"
-                        >
-                            <Settings size={20} />
-                            Configure
-                        </button>
-                    </div>
-
 
                 </div>
 
@@ -306,14 +242,6 @@ const Admin: React.FC = () => {
                         <div>
                             <h3 className="text-lg font-semibold text-foreground mb-3">Current Limits</h3>
                             <div className="space-y-2 text-sm">
-                                <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Max Maps per User:</span>
-                                    <span className="text-foreground font-medium">200</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Max Driver Notifications:</span>
-                                    <span className="text-foreground font-medium">200</span>
-                                </div>
                                 <div className="flex justify-between">
                                     <span className="text-muted-foreground">Max Users:</span>
                                     <span className="text-foreground font-medium">100</span>
@@ -447,38 +375,13 @@ const Admin: React.FC = () => {
             </div>
 
             {/* Configuration Modals */}
-            {activeModal === 'max_maps_per_user' && (
-                <ConfigModal
-                    configKey="max_maps_per_user"
-                    title="Configure Map Limits"
-                    description="Set the maximum number of maps each user can add to their watch list. Higher values increase processing time but allow more maps per user."
-                />
-            )}
-
-            {activeModal === 'max_driver_notifications' && (
-                <ConfigModal
-                    configKey="max_driver_notifications"
-                    title="Configure Driver Notification Limits"
-                    description="Set the maximum number of driver notifications each user can have. This affects how many maps users can track for driver notifications."
-                />
-            )}
-
             {activeModal === 'max_users_registration' && (
                 <ConfigModal
                     configKey="max_users_registration"
                     title="Configure User Registration Limits"
-                    description="Set the maximum number of users that can register on the site. This helps control system load and API usage."
+                    description="Set the maximum number of users that can register on the site."
                 />
             )}
-
-            {activeModal === 'max_new_records_per_map' && (
-                <ConfigModal
-                    configKey="max_new_records_per_map"
-                    title="Configure Popularity Limits"
-                    description="Set the maximum number of new records per map before truncating in emails. This prevents email spam from viral maps."
-                />
-            )}
-
 
         </div>
     );

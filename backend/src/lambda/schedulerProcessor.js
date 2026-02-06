@@ -163,26 +163,7 @@ const processMapAlertCheck = async (username, email) => {
         const { alert_type, map_count } = alertRows[0];
         console.log(`📊 User ${username} has ${map_count} maps with ${alert_type} mode`);
 
-        // Check if map count exceeds limit and auto-switch to inaccurate mode
-        const maxMapsLimit = parseInt(process.env.MAX_MAPS_PER_USER || '200');
-        let finalAlertType = alert_type;
-
-        if (alert_type === 'accurate' && map_count > maxMapsLimit) {
-            console.log(`⚠️ User ${username} has ${map_count} maps, exceeding limit of ${maxMapsLimit}. Auto-switching to inaccurate mode.`);
-
-            // Update alert type in database
-            await client.query(
-                'UPDATE alerts SET alert_type = $1 WHERE user_id = (SELECT id FROM users WHERE username = $2)',
-                ['inaccurate', username]
-            );
-
-            finalAlertType = 'inaccurate';
-
-            // Log this change
-            await logNotificationHistory(username, 'mapper_alert', 'technical_error',
-                `Auto-switched to inaccurate mode due to ${map_count} maps exceeding limit of ${maxMapsLimit}`, 0);
-        }
-
+        const finalAlertType = alert_type;
         let newRecords = [];
         let mapperContent = '';
 

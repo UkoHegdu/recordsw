@@ -28,11 +28,13 @@ function getHandler(moduleName) {
     updateUserAlertType: 'updateUserAlertType.js',
     getNotificationHistory: 'getNotificationHistory.js',
     getAdminDailyOverview: 'getAdminDailyOverview.js',
+    getSiteStats: 'getSiteStats.js',
     health: 'health.js',
     test: 'test.js',
     testAdvanced: 'testAdvanced.js',
     submitFeedback: 'submitFeedback.js',
-    getFeedback: 'getFeedback.js'
+    getFeedback: 'getFeedback.js',
+    markFeedbackRead: 'markFeedbackRead.js'
   };
   const file = fileMap[moduleName] || `${moduleName}.js`;
   const mod = require(path.join(LAMBDA_DIR, file));

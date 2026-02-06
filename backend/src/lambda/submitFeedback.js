@@ -153,6 +153,21 @@ exports.handler = async (event, context) => {
 
         const client = await getDbConnection();
 
+        // Block new feedback if more than 50 unread
+        const unreadResult = await client.query(
+            'SELECT COUNT(*)::int AS count FROM feedback WHERE read_at IS NULL'
+        );
+        const unreadCount = unreadResult.rows[0]?.count ?? 0;
+        if (unreadCount >= 50) {
+            return {
+                statusCode: 503,
+                headers: headers,
+                body: JSON.stringify({
+                    error: 'Feedback submission is temporarily disabled. Please try again later.'
+                })
+            };
+        }
+
         // Get username from database
         const userQuery = `SELECT username FROM users WHERE id = $1`;
         const userResult = await client.query(userQuery, [userId]);

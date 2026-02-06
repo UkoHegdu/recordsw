@@ -96,7 +96,7 @@ exports.handler = async (event, context) => {
             return {
                 statusCode: 401,
                 headers: headers,
-                body: JSON.stringify({ msg: 'Invalid credentials' })
+                body: JSON.stringify({ msg: 'Incorrect email or password' })
             };
         }
 
@@ -110,7 +110,7 @@ exports.handler = async (event, context) => {
             return {
                 statusCode: 401,
                 headers: headers,
-                body: JSON.stringify({ msg: 'Invalid credentials' })
+                body: JSON.stringify({ msg: 'Incorrect email or password' })
             };
         }
 

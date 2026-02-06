@@ -160,32 +160,12 @@ exports.handler = async (event, context) => {
 
 // Validate configuration values
 function validateConfigValue(configKey, value) {
-    const numValue = parseInt(value);
-
-    switch (configKey) {
-        case 'max_maps_per_user':
-            if (isNaN(numValue) || numValue < 1 || numValue > 1000) {
-                return { valid: false, error: 'Max maps per user must be between 1 and 1000' };
-            }
-            break;
-        case 'max_driver_notifications':
-            if (isNaN(numValue) || numValue < 1 || numValue > 1000) {
-                return { valid: false, error: 'Max driver notifications must be between 1 and 1000' };
-            }
-            break;
-        case 'max_users_registration':
-            if (isNaN(numValue) || numValue < 1 || numValue > 10000) {
-                return { valid: false, error: 'Max users registration must be between 1 and 10000' };
-            }
-            break;
-        case 'max_new_records_per_map':
-            if (isNaN(numValue) || numValue < 1 || numValue > 100) {
-                return { valid: false, error: 'Max new records per map must be between 1 and 100' };
-            }
-            break;
-        default:
-            return { valid: true };
+    if (configKey !== 'max_users_registration') {
+        return { valid: false, error: 'Unknown config key' };
     }
-
+    const numValue = parseInt(value);
+    if (isNaN(numValue) || numValue < 1 || numValue > 10000) {
+        return { valid: false, error: 'Max users registration must be between 1 and 10000' };
+    }
     return { valid: true };
 }

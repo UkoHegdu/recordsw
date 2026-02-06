@@ -49,6 +49,8 @@ chmod +x deploy/deploy.sh
 ./deploy/deploy.sh
 ```
 
+After `git pull`, the script may lose the execute bit. Either run `chmod +x deploy/deploy.sh` again or use `bash deploy/deploy.sh`.
+
 App will be at **http://YOUR_SERVER_IP/** (port 80).
 
 ---

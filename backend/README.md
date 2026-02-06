@@ -44,7 +44,7 @@ Single Node/Express server that exposes the same REST API as the API Gateway + L
 - `GET  /api/v1/driver/maps/search`, `GET/POST/DELETE /api/v1/driver/notifications`, `DELETE /api/v1/driver/notifications/:id`
 - `GET/PUT /api/v1/admin/config`, `GET /api/v1/admin/users`, `PUT /api/v1/admin/users/alert-type`, `GET /api/v1/admin/daily-overview`
 - `GET  /api/v1/notification-history`
-- `GET/POST /api/v1/feedback`
+- `GET/POST /api/v1/feedback`, `PUT /api/v1/feedback/:id/read`
 - `GET/POST /api/v1/test`, `GET/POST /api/v1/test-advanced`
 
 ## Backend vs terraform

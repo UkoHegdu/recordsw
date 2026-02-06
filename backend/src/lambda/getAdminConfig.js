@@ -64,12 +64,11 @@ exports.handler = async (event, context) => {
         const client = getDbConnection();
         await client.connect();
 
-        // Get all admin configuration values (excluding API rate limit)
+        // Get only max_users_registration (the only configurable limit)
         const query = `
             SELECT config_key, config_value, description, updated_at
             FROM admin_config
-            WHERE config_key != 'api_rate_limit_per_second'
-            ORDER BY config_key
+            WHERE config_key = 'max_users_registration'
         `;
 
         const { rows } = await client.query(query);

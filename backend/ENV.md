@@ -17,7 +17,6 @@ Env vars are read via `process.env.VAR_NAME` in the files below. The backend doe
 | **OCLIENT_ID**, **OCLIENT_SECRET** | `lambda/shared/oauthApiClient.js` | Trackmania OAuth2 (account names API). |
 | **LEAD_API** | `lambda/mapSearch.js`, `lambda/mapSearchBackground.js`, `lambda/getMapRecords.js`, `lambda/checkDriverPositions.js`, `lambda/driverNotifications.js`, `lambda/driverNotificationStatusCheck.js` | Trackmania leaderboard API base URL. |
 | **MAX_NEW_RECORDS_PER_MAP**, **POPULAR_MAP_MESSAGE** | `lambda/schedulerProcessor.js` | Optional; email formatting. |
-| **MAX_MAPS_PER_USER** | `lambda/schedulerProcessor.js`, `lambda/create_alert.js` | Optional; default 200. |
 
 ## Minimum to run
 

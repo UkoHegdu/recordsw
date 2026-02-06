@@ -121,6 +121,16 @@ exports.handler = async (event, context) => {
 
         const { rows: detailData } = await client.query(detailQuery);
 
+        // Site-wide stats for landing page (Registered Users, Alerts Sent, Driver Notifications)
+        const statsQuery = `
+            SELECT
+                (SELECT COUNT(*)::int FROM users) as total_users,
+                (SELECT COUNT(*)::int FROM notification_history WHERE notification_type = 'mapper_alert' AND status = 'sent') as total_alerts_sent,
+                (SELECT COUNT(*)::int FROM notification_history WHERE notification_type = 'driver_notification' AND status = 'sent') as total_driver_notifications
+        `;
+        const { rows: statsRows } = await client.query(statsQuery);
+        const siteStats = statsRows[0] || { total_users: 0, total_alerts_sent: 0, total_driver_notifications: 0 };
+
         await client.end();
 
         // Process the data into daily summaries
@@ -221,7 +231,12 @@ exports.handler = async (event, context) => {
             },
             body: JSON.stringify({
                 message: 'Admin daily overview retrieved successfully',
-                daily_summaries: dailySummaries
+                daily_summaries: dailySummaries,
+                site_stats: {
+                    total_users: Number(siteStats.total_users) || 0,
+                    total_alerts_sent: Number(siteStats.total_alerts_sent) || 0,
+                    total_driver_notifications: Number(siteStats.total_driver_notifications) || 0
+                }
             })
         };
     } catch (error) {

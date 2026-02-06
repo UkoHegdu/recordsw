@@ -29,7 +29,7 @@ const Login: React.FC<LoginProps> = ({ setIsLoggedIn }) => {
                 localStorage.setItem('access_token', response.data.access_token);
                 localStorage.setItem('refresh_token', response.data.refresh_token);
                 setIsLoggedIn(true);
-                toast.success('Welcome back to TrackMania!');
+                toast.success('Welcome back to TrackMania Records Watcher!');
                 navigate('/');
             }
         } catch (error: unknown) {

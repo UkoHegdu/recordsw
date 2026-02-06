@@ -94,6 +94,26 @@ exports.handler = async (event, context) => {
         await client.connect();
         console.log('✅ Connected to Neon database');
 
+        // Get max users limit from admin_config (default 200)
+        const limitResult = await client.query(
+            "SELECT config_value FROM admin_config WHERE config_key = 'max_users_registration'"
+        );
+        const maxUsers = limitResult.rows[0]
+            ? parseInt(limitResult.rows[0].config_value, 10) || 200
+            : 200;
+
+        const countResult = await client.query('SELECT COUNT(*)::int as count FROM users');
+        const userCount = countResult.rows[0]?.count ?? 0;
+        if (userCount >= maxUsers) {
+            return {
+                statusCode: 403,
+                headers: headers,
+                body: JSON.stringify({
+                    msg: 'Sorry, too many users registered. No new registrations currently possible.'
+                })
+            };
+        }
+
         // Check if email already exists
         const existingEmail = await client.query('SELECT id FROM users WHERE email = $1', [email]);
         if (existingEmail.rows.length > 0) {

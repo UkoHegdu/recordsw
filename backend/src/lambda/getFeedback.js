@@ -98,7 +98,7 @@ exports.handler = async (event, context) => {
 
         // Get feedback from database, ordered by most recent first
         const feedbackQuery = `
-            SELECT id, username, message, type, created_at
+            SELECT id, username, message, type, created_at, read_at
             FROM feedback
             ORDER BY created_at DESC
             LIMIT 100

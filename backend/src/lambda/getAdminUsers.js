@@ -64,21 +64,23 @@ exports.handler = async (event, context) => {
         const client = getDbConnection();
         await client.connect();
 
-        // Get all users with their alert information
+        // Get all users (including admins) with their alert information
         const query = `
-            SELECT 
-                u.id,
-                u.username,
-                u.tm_username,
-                u.email,
-                u.created_at,
-                a.alert_type,
-                a.map_count,
-                a.created_at as alert_created_at
-            FROM users u
-            LEFT JOIN alerts a ON u.id = a.user_id
-            WHERE u.role = 'user'
-            ORDER BY u.created_at DESC
+            SELECT * FROM (
+                SELECT DISTINCT ON (u.id)
+                    u.id,
+                    u.username,
+                    u.tm_username,
+                    u.email,
+                    u.created_at,
+                    a.alert_type,
+                    a.map_count,
+                    a.created_at as alert_created_at
+                FROM users u
+                LEFT JOIN alerts a ON u.id = a.user_id
+                ORDER BY u.id, a.created_at DESC NULLS LAST
+            ) sub
+            ORDER BY created_at DESC
         `;
 
         const { rows } = await client.query(query);

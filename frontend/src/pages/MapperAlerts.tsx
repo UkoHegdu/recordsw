@@ -41,7 +41,7 @@ const MapperAlerts: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [showAddForm, setShowAddForm] = useState(false);
     const [newMapId, setNewMapId] = useState('');
-    const [activeTab, setActiveTab] = useState<'info' | 'manage'>('info');
+    const [activeTab, setActiveTab] = useState<'info' | 'manage'>('manage');
     const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
     const [showAddAlertModal, setShowAddAlertModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -88,8 +88,8 @@ const MapperAlerts: React.FC = () => {
             // Extract username from alerts data if available
             if (alertsData.length > 0 && !userProfile) {
                 const firstAlert = alertsData[0];
-                // The username is embedded in the mapName field like "Map for username"
-                const username = firstAlert.mapName?.replace('Map for ', '') || 'your';
+                // mapName format: "username's map alerts"
+                const username = firstAlert.mapName?.replace(/'s map alerts$/, '') || 'your';
                 setUserProfile({
                     id: '1',
                     email: '',
@@ -320,19 +320,10 @@ const MapperAlerts: React.FC = () => {
                         {/* Notification History - Only show if user has alerts */}
                         {alerts.length > 0 && (
                             <div className="racing-card">
-                                <div className="flex justify-between items-center mb-4">
-                                    <h2 className="text-xl font-semibold flex items-center gap-2">
-                                        <Clock className="w-5 h-5" />
-                                        Notification History (Last 5 Days)
-                                    </h2>
-                                    <button
-                                        onClick={fetchNotificationHistory}
-                                        disabled={historyLoading}
-                                        className="btn-racing text-sm"
-                                    >
-                                        {historyLoading ? 'Loading...' : 'Refresh'}
-                                    </button>
-                                </div>
+                                <h2 className="text-xl font-semibold flex items-center gap-2 mb-4">
+                                    <Clock className="w-5 h-5" />
+                                    Notification History (Last 5 Days)
+                                </h2>
 
                                 {historyLoading ? (
                                     <div className="flex justify-center py-8">
@@ -364,19 +355,15 @@ const MapperAlerts: React.FC = () => {
                                                             Mapper Alerts
                                                         </h4>
                                                         {day.mapper_alert ? (
-                                                            <div className={`p-3 rounded-lg text-sm ${day.mapper_alert.status === 'sent'
+                                                            <div className={`p-3 rounded-lg text-sm ${day.mapper_alert.status === 'sent' || day.mapper_alert.status === 'no_new_times'
                                                                 ? 'bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800'
-                                                                : day.mapper_alert.status === 'technical_error'
-                                                                    ? 'bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800'
-                                                                    : 'bg-gray-50 dark:bg-gray-950/20 border border-gray-200 dark:border-gray-800'
+                                                                : 'bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800'
                                                                 }`}>
-                                                                <p className={`font-medium ${day.mapper_alert.status === 'sent'
+                                                                <p className={`font-medium ${day.mapper_alert.status === 'sent' || day.mapper_alert.status === 'no_new_times'
                                                                     ? 'text-green-800 dark:text-green-200'
-                                                                    : day.mapper_alert.status === 'technical_error'
-                                                                        ? 'text-red-800 dark:text-red-200'
-                                                                        : 'text-gray-800 dark:text-gray-200'
+                                                                    : 'text-red-800 dark:text-red-200'
                                                                     }`}>
-                                                                    {day.mapper_alert.message}
+                                                                    {day.mapper_alert.status === 'sent' || day.mapper_alert.status === 'no_new_times' ? 'Success' : 'Failed'}
                                                                 </p>
                                                                 {day.mapper_alert.records_found > 0 && (
                                                                     <p className="text-xs text-muted-foreground mt-1">

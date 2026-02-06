@@ -10,6 +10,7 @@ const driver = require('./routes/driver');
 const admin = require('./routes/admin');
 const notificationHistory = require('./routes/notificationHistory');
 const feedback = require('./routes/feedback');
+const stats = require('./routes/stats');
 const test = require('./routes/test');
 const cron = require('./routes/cron');
 
@@ -43,6 +44,7 @@ app.use('/api/v1/driver', driver);
 app.use('/api/v1/admin', admin);
 app.use('/api/v1', notificationHistory);
 app.use('/api/v1', feedback);
+app.use('/api/v1', stats);
 app.use('/api/v1', test);
 app.use('/api/v1', cron);
 

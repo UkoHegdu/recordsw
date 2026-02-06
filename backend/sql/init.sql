@@ -105,7 +105,8 @@ create table feedback (
    username   VARCHAR(255) not null,
    message    text not null,
    type       VARCHAR(50) DEFAULT 'general',
-   created_at timestamp default now()
+   created_at timestamp default now(),
+   read_at    timestamp
 );
 
 -- ---------------------------------------------------------------------------
@@ -175,11 +176,7 @@ insert into users (
            now() );
 
 insert into admin_config (config_key, config_value, description) values
-('max_maps_per_user', '200', 'Maximum number of maps a user can add to their watch list (safe timeout margin)'),
-('max_driver_notifications', '200', 'Maximum number of driver notifications per user (optimized with position API)'),
-('max_users_registration', '100', 'Maximum number of users that can register on the site'),
-('trackmania_api_monthly_limit', '5184000', 'TrackMania API monthly limit (2 req/sec * 30 days)'),
-('max_new_records_per_map', '20', 'Maximum new records per map before truncating in email (prevents spam)')
+('max_users_registration', '200', 'Maximum number of users that can register on the site')
 on conflict (config_key) do nothing;
 
 insert into alerts (user_id, username, email, created_at) values (1, 'teh_macho', 'fantomass@gmail.com', now());
@@ -208,3 +205,9 @@ create index if not exists idx_notification_history_type on notification_history
 create index if not exists idx_notification_history_status on notification_history(status);
 create index if not exists idx_feedback_created_at on feedback(created_at desc);
 create index if not exists idx_feedback_user_id on feedback(user_id);
+
+-- ---------------------------------------------------------------------------
+-- Migrations (safe to re-run on existing DBs – adds missing columns)
+-- Run these if your DB was created before a column was added.
+-- ---------------------------------------------------------------------------
+ALTER TABLE feedback ADD COLUMN IF NOT EXISTS read_at timestamp;

@@ -114,7 +114,7 @@ async function handleGetAlerts(event, headers) {
 
         const alerts = result.rows.map(row => ({
             id: row.id.toString(),
-            mapName: `Map for ${row.username}`, // Placeholder - you might want to join with maps table
+            mapName: `${row.username}'s map alerts`,
             mapId: `map_${row.id}`, // Placeholder
             createdAt: row.created_at,
             isActive: true
@@ -210,26 +210,17 @@ async function handleCreateAlert(event, headers) {
 
         console.log(`📊 Map count: ${mapCount}, Alert type: ${alertType}`);
 
-        // Check if user exceeds map limit for accurate mode
-        const maxMapsLimit = parseInt(process.env.MAX_MAPS_PER_USER || '200');
-        let finalAlertType = alertType;
-
-        if (alertType === 'accurate' && mapCount > maxMapsLimit) {
-            console.log(`⚠️ User ${username} has ${mapCount} maps, exceeding limit of ${maxMapsLimit}. Switching to inaccurate mode.`);
-            finalAlertType = 'inaccurate';
-        }
-
         // Insert alert with actual user_id from JWT token, alert type, and map count
         const alertResult = await client.query(
             'INSERT INTO alerts (username, email, user_id, alert_type, map_count, created_at) VALUES ($1, $2, $3, $4, $5, NOW()) RETURNING id',
-            [username, email, userId, finalAlertType, mapCount]
+            [username, email, userId, alertType, mapCount]
         );
 
         const alertId = alertResult.rows[0].id;
         console.log(`✅ Alert created successfully for user ${userId} with ID ${alertId}`);
 
         // If inaccurate mode, initialize position data for all maps
-        if (finalAlertType === 'inaccurate' && mapCount > 0) {
+        if (alertType === 'inaccurate' && mapCount > 0) {
             console.log(`🚀 Initializing position data for ${mapCount} maps in inaccurate mode`);
             // Note: Position initialization will be handled by the mapSearchBackground process
             // when it processes the alert maps
@@ -242,9 +233,8 @@ async function handleCreateAlert(event, headers) {
                 success: true,
                 msg: 'Alert created successfully',
                 alert_id: alertId,
-                alert_type: finalAlertType,
-                map_count: mapCount,
-                auto_switched: alertType !== finalAlertType
+                alert_type: alertType,
+                map_count: mapCount
             })
         };
 

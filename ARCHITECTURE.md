@@ -39,7 +39,7 @@ Single Node/Express server for deployment on Hetzner (or similar). No AWS: Postg
 
 ### Handlers (lambda/)
 
-Handler code lives in `src/lambda/`. Same API surface as API Gateway + Lambda; no AWS at runtime.
+Handler code lives in `src/lambda/`. The folder is named "lambda" because the handlers were originally written for AWS Lambda (they take an `event`, return `{ statusCode, headers, body }`). The **lambdaAdapter** wraps Express: it turns `req` into an event, calls the handler, and sends the response. Everything runs in-process on a single Node/Express server—no serverless or AWS at runtime.
 
 - **Auth:** `login.js`, `logout.js`, `refreshToken.js`, `register.js` – use `sessionStore.js` (in-memory) and Postgres `users`. JWT signed with `JWT_SECRET`.
 - **Map search:** `mapSearch.js` creates a job (Postgres `map_search_jobs` or in-memory via `mapSearchJobStore`), then runs `mapSearchBackground.handler()` in-process (`setImmediate`). `checkJobStatus.js` reads from the same store.
