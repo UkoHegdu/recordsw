@@ -203,18 +203,18 @@ exports.handler = async (event, context) => {
                 overall_status: overallStatus,
                 status_message: statusMessage,
                 stats: {
-                    total_users: totalUsers,
+                    total_users: Number(totalUsers) || 0,
                     mapper_alerts: {
-                        successful: mapperDay?.successful_mapper_alerts || 0,
-                        no_new_times: mapperDay?.no_new_times_mapper_alerts || 0,
-                        errors: mapperDay?.error_mapper_alerts || 0,
-                        total_records: mapperDay?.total_mapper_records || 0
+                        successful: Number(mapperDay?.successful_mapper_alerts) || 0,
+                        no_new_times: Number(mapperDay?.no_new_times_mapper_alerts) || 0,
+                        errors: Number(mapperDay?.error_mapper_alerts) || 0,
+                        total_records: Number(mapperDay?.total_mapper_records) || 0
                     },
                     driver_notifications: {
-                        successful: driverDay?.successful_driver_notifications || 0,
-                        no_new_times: driverDay?.no_new_times_driver_notifications || 0,
-                        errors: driverDay?.error_driver_notifications || 0,
-                        total_notifications: driverDay?.total_driver_notifications || 0
+                        successful: Number(driverDay?.successful_driver_notifications) || 0,
+                        no_new_times: Number(driverDay?.no_new_times_driver_notifications) || 0,
+                        errors: Number(driverDay?.error_driver_notifications) || 0,
+                        total_notifications: Number(driverDay?.total_driver_notifications) || 0
                     }
                 },
                 user_breakdown: Object.values(userBreakdown)

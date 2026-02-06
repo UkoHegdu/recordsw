@@ -24,7 +24,7 @@ exports.handler = async (event) => {
                 SELECT
                     (SELECT COUNT(*)::int FROM users) as total_users,
                     (SELECT COUNT(*)::int FROM notification_history WHERE notification_type = 'mapper_alert' AND status = 'sent') as total_alerts_sent,
-                    (SELECT COUNT(*)::int FROM notification_history WHERE notification_type = 'driver_notification' AND status = 'sent') as total_driver_notifications
+                    (SELECT COUNT(*)::int FROM driver_notifications) as maps_being_watched
             `);
             rows = result.rows;
         } finally {
@@ -35,7 +35,7 @@ exports.handler = async (event) => {
         const siteStats = {
             total_users: Number(row.total_users) || 0,
             total_alerts_sent: Number(row.total_alerts_sent) || 0,
-            total_driver_notifications: Number(row.total_driver_notifications) || 0
+            maps_being_watched: Number(row.maps_being_watched) || 0
         };
 
         return {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, Bell, Trophy, User, ArrowRight, Zap, MessageSquare, Users, TrendingUp, Send, Calendar, BarChart3 } from 'lucide-react';
+import { MapPin, Bell, Trophy, User, ArrowRight, Zap, MessageSquare, Users, Send, BarChart3 } from 'lucide-react';
 import { toast } from 'sonner';
 import apiClient from '../auth';
 
@@ -9,27 +9,22 @@ const Landing: React.FC = () => {
     const [stats, setStats] = useState({
         total_users: 0,
         total_alerts_sent: 0,
-        total_driver_notifications: 0
+        maps_being_watched: 0
     });
     const [feedback, setFeedback] = useState('');
     const [feedbackLoading, setFeedbackLoading] = useState(false);
     const [statsLoading, setStatsLoading] = useState(true);
 
-    // Mock news articles for now
-    const newsArticles = [
+    const featureDescriptions = [
         {
-            id: 1,
-            title: "Version 1.1 Deployed",
-            content: "We've launched version 1.1 with improved admin controls, driver notifications, and smart alert system. The new two-phase processing makes everything faster and more reliable.",
-            date: "2025-09-17",
-            type: "update"
+            title: "Mapper Alerts",
+            icon: Bell,
+            description: "Add maps you created and get notified when someone drives them. You can add multiple maps, manage alerts per map, and view notification history."
         },
         {
-            id: 2,
-            title: "New Dashboard Experience",
-            content: "Welcome to your new dashboard! Here you can see site statistics, latest news, and send feedback directly to our team. We're constantly improving based on your input.",
-            date: "2025-09-17",
-            type: "feature"
+            title: "Driver Notifications",
+            icon: MapPin,
+            description: "Add maps where you hold a top 5 time and get notified when someone beats your time. Track your position and personal best. Notifications are sent when your record is beaten or when you drop in the rankings."
         }
     ];
 
@@ -40,16 +35,36 @@ const Landing: React.FC = () => {
     }, []);
 
     const loadSiteStats = async () => {
+        const cached = sessionStorage.getItem('site_stats');
+        if (cached) {
+            try {
+                const siteStats = JSON.parse(cached);
+                if (siteStats && typeof siteStats === 'object') {
+                    setStats({
+                        total_users: siteStats.total_users ?? 0,
+                        total_alerts_sent: siteStats.total_alerts_sent ?? 0,
+                        maps_being_watched: siteStats.maps_being_watched ?? 0
+                    });
+                    setStatsLoading(false);
+                    return;
+                }
+            } catch {
+                // invalid cache, fall through to fetch
+            }
+        }
+
         try {
             setStatsLoading(true);
             const response = await apiClient.get('/api/v1/stats');
             const siteStats = response.data;
             if (siteStats && typeof siteStats === 'object') {
-                setStats({
+                const data = {
                     total_users: siteStats.total_users ?? 0,
                     total_alerts_sent: siteStats.total_alerts_sent ?? 0,
-                    total_driver_notifications: siteStats.total_driver_notifications ?? 0
-                });
+                    maps_being_watched: siteStats.maps_being_watched ?? 0
+                };
+                setStats(data);
+                sessionStorage.setItem('site_stats', JSON.stringify(data));
             }
         } catch (error) {
             console.error('Error loading site stats:', error);
@@ -105,24 +120,6 @@ const Landing: React.FC = () => {
         }
     };
 
-    const getNewsIcon = (type: string) => {
-        switch (type) {
-            case 'update': return <TrendingUp className="w-5 h-5 text-blue-500" />;
-            case 'feature': return <BarChart3 className="w-5 h-5 text-green-500" />;
-            case 'announcement': return <Calendar className="w-5 h-5 text-purple-500" />;
-            default: return <Calendar className="w-5 h-5 text-gray-500" />;
-        }
-    };
-
-    const getNewsTypeColor = (type: string) => {
-        switch (type) {
-            case 'update': return 'bg-blue-900 text-blue-200';
-            case 'feature': return 'bg-green-900 text-green-200';
-            case 'announcement': return 'bg-purple-900 text-purple-200';
-            default: return 'bg-gray-900 text-gray-200';
-        }
-    };
-
     const features = [
         {
             icon: Bell,
@@ -156,41 +153,21 @@ const Landing: React.FC = () => {
                             <p className="text-muted-foreground">Here's what's happening with your TrackMania community.</p>
                         </div>
 
-                        {/* News Section */}
+                        {/* Mapper Alerts & Driver Notifications */}
                         <div className="racing-card mb-8">
                             <h2 className="text-2xl font-semibold mb-6 flex items-center gap-2">
-                                <Calendar className="w-6 h-6 text-primary" />
-                                Site News
+                                <Bell className="w-6 h-6 text-primary" />
+                                What You Can Do
                             </h2>
 
-                            <div className="space-y-6">
-                                {newsArticles.map((article) => (
-                                    <div key={article.id} className="border border-border rounded-lg p-6 hover:bg-muted/50 transition-colors">
-                                        <div className="flex items-start gap-4">
-                                            <div className="flex-shrink-0">
-                                                {getNewsIcon(article.type)}
-                                            </div>
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-3 mb-2">
-                                                    <h3 className="text-xl font-semibold text-foreground">
-                                                        {article.title}
-                                                    </h3>
-                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getNewsTypeColor(article.type)}`}>
-                                                        {article.type}
-                                                    </span>
-                                                </div>
-                                                <p className="text-muted-foreground mb-3">
-                                                    {article.content}
-                                                </p>
-                                                <p className="text-sm text-muted-foreground">
-                                                    {new Date(article.date).toLocaleDateString('en-US', {
-                                                        year: 'numeric',
-                                                        month: 'long',
-                                                        day: 'numeric'
-                                                    })}
-                                                </p>
-                                            </div>
+                            <div className="grid md:grid-cols-2 gap-6">
+                                {featureDescriptions.map((item, index) => (
+                                    <div key={index} className="border border-border rounded-lg p-6">
+                                        <div className="flex items-center gap-3 mb-3">
+                                            <item.icon className="w-6 h-6 text-primary" />
+                                            <h3 className="text-lg font-semibold text-foreground">{item.title}</h3>
                                         </div>
+                                        <p className="text-muted-foreground text-sm leading-relaxed">{item.description}</p>
                                     </div>
                                 ))}
                             </div>
@@ -223,8 +200,8 @@ const Landing: React.FC = () => {
 
                                     <div className="text-center p-6 bg-gradient-to-br from-purple-500/10 to-purple-600/10 rounded-xl border border-purple-500/20">
                                         <MapPin className="w-8 h-8 text-purple-500 mx-auto mb-3" />
-                                        <div className="text-3xl font-bold text-purple-500 mb-1">{stats?.total_driver_notifications || 0}</div>
-                                        <div className="text-sm text-muted-foreground">Driver Notifications</div>
+                                        <div className="text-3xl font-bold text-purple-500 mb-1">{stats?.maps_being_watched || 0}</div>
+                                        <div className="text-sm text-muted-foreground">Maps being watched</div>
                                     </div>
                                 </div>
                             )}

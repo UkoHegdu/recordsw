@@ -18,6 +18,8 @@ RUN echo "VITE_BACKEND_URL=$VITE_BACKEND_URL" > .env && npm run build
 # Stage 2: Nginx
 FROM nginx:alpine
 
+RUN apk add --no-cache curl
+
 # (optional) Clear old static files (but nginx:alpine may have none)
 RUN rm -rf /usr/share/nginx/html/*
 
