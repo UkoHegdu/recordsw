@@ -4,8 +4,13 @@ import { MapPin, Bell, Trophy, User, ArrowRight, Zap, MessageSquare, Users, Send
 import { toast } from 'sonner';
 import apiClient from '../auth';
 
-const Landing: React.FC = () => {
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
+interface LandingProps {
+    isLoggedIn?: boolean;
+}
+
+const Landing: React.FC<LandingProps> = ({ isLoggedIn: isLoggedInProp }) => {
+    const [localLoggedIn, setLocalLoggedIn] = useState(false);
+    const isLoggedIn = isLoggedInProp !== undefined ? isLoggedInProp : localLoggedIn;
     const [stats, setStats] = useState({
         total_users: 0,
         total_alerts_sent: 0,
@@ -29,10 +34,12 @@ const Landing: React.FC = () => {
     ];
 
     useEffect(() => {
-        const token = localStorage.getItem('access_token');
-        setIsLoggedIn(!!token);
+        if (isLoggedInProp === undefined) {
+            const token = localStorage.getItem('access_token');
+            setLocalLoggedIn(!!token);
+        }
         loadSiteStats();
-    }, []);
+    }, [isLoggedInProp]);
 
     const loadSiteStats = async () => {
         const cached = sessionStorage.getItem('site_stats');

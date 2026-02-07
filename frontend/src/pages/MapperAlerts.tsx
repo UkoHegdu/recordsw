@@ -355,15 +355,19 @@ const MapperAlerts: React.FC = () => {
                                                             Mapper Alerts
                                                         </h4>
                                                         {day.mapper_alert ? (
-                                                            <div className={`p-3 rounded-lg text-sm ${day.mapper_alert.status === 'sent' || day.mapper_alert.status === 'no_new_times'
+                                                            <div className={`p-3 rounded-lg text-sm ${day.mapper_alert.status === 'sent'
                                                                 ? 'bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800'
-                                                                : 'bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800'
+                                                                : day.mapper_alert.status === 'no_new_times'
+                                                                    ? 'bg-gray-50 dark:bg-gray-900/40 border border-gray-200 dark:border-gray-700'
+                                                                    : 'bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800'
                                                                 }`}>
-                                                                <p className={`font-medium ${day.mapper_alert.status === 'sent' || day.mapper_alert.status === 'no_new_times'
+                                                                <p className={`font-medium ${day.mapper_alert.status === 'sent'
                                                                     ? 'text-green-800 dark:text-green-200'
-                                                                    : 'text-red-800 dark:text-red-200'
+                                                                    : day.mapper_alert.status === 'no_new_times'
+                                                                        ? 'text-gray-700 dark:text-gray-300'
+                                                                        : 'text-red-800 dark:text-red-200'
                                                                     }`}>
-                                                                    {day.mapper_alert.status === 'sent' || day.mapper_alert.status === 'no_new_times' ? 'Success' : 'Failed'}
+                                                                    {day.mapper_alert.status === 'sent' ? 'Success' : day.mapper_alert.status === 'no_new_times' ? 'No new records' : 'Failed'}
                                                                 </p>
                                                                 {day.mapper_alert.records_found > 0 && (
                                                                     <p className="text-xs text-muted-foreground mt-1">

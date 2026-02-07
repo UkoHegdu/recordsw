@@ -49,7 +49,7 @@ const AppLayout: React.FC = () => {
                 <Sidebar isLoggedIn={isLoggedIn} onLogout={handleLogout} />
                 <main className="flex-1 min-h-screen">
                         <Routes>
-                            <Route path="/" element={<Landing />} />
+                            <Route path="/" element={<Landing isLoggedIn={isLoggedIn} />} />
                             <Route path="/login" element={<Login setIsLoggedIn={setIsLoggedIn} />} />
                             <Route path="/register" element={<Register />} />
                             <Route
@@ -87,7 +87,9 @@ const AppLayout: React.FC = () => {
                         </Routes>
                     </main>
             </div>
-            <Toaster position="top-right" />
+            <Toaster position="top-right" theme="dark" toastOptions={{
+                style: { background: 'hsl(220 27% 12%)', border: '1px solid hsl(220 27% 18%)', color: 'hsl(210 40% 98%)' }
+            }} />
         </div>
     );
 };

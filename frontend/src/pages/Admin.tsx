@@ -783,7 +783,7 @@ const Admin: React.FC = () => {
                                                             <div className="flex items-center gap-2 mb-1">
                                                                 {getNotificationStatusIcon(user.mapper_alert.status)}
                                                                 <span className="text-sm font-medium capitalize">
-                                                                    {user.mapper_alert.status.replace('_', ' ')}
+                                                                    {user.mapper_alert.status === 'no_new_times' ? 'No new records' : user.mapper_alert.status.replace('_', ' ')}
                                                                 </span>
                                                             </div>
                                                             <p className="text-xs text-muted-foreground">
