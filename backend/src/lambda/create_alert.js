@@ -2,6 +2,7 @@
 const { Client } = require('pg');
 const jwt = require('jsonwebtoken');
 const { validateAndSanitizeInput, checkRateLimit } = require('./securityUtils');
+const { fetchMapListOnly } = require('./mapSearch');
 
 // Database connection using Neon (brackets for forcing backend build)
 const getDbConnection = () => {
@@ -204,9 +205,19 @@ async function handleCreateAlert(event, headers) {
         const { username, email } = userResult.rows[0];
         console.log(`Creating alert for user: ${username} (${email})`);
 
-        // Get map count from request body
-        const mapCount = body.MapCount || 0;
         const alertType = body.alert_type || 'accurate';
+
+        // Fetch map count from Trackmania Exchange (author param uses username, not tm_username)
+        let mapCount = body.MapCount ?? 0;
+        if (username) {
+            try {
+                const mapList = await fetchMapListOnly(username);
+                mapCount = mapList.length;
+                console.log(`📊 Fetched map count from TM Exchange: ${mapCount}`);
+            } catch (err) {
+                console.warn(`Could not fetch map count for ${username}, using body value:`, err.message);
+            }
+        }
 
         console.log(`📊 Map count: ${mapCount}, Alert type: ${alertType}`);
 
