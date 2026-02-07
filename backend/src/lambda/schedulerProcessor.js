@@ -1,5 +1,7 @@
 // lambda/schedulerProcessor.js - Backend: Postgres daily_emails + map_leaderboard_cache (no DynamoDB/SQS)
-const { fetchMapsAndLeaderboards } = require('./mapSearch');
+const { fetchMapsAndLeaderboards, fetchMapListOnly } = require('./mapSearch');
+
+const AUTO_INACCURATE_MAP_THRESHOLD = 100;
 const { translateAccountNames } = require('./accountNames');
 const dailyEmailStore = require('../dailyEmailStore');
 
@@ -144,9 +146,9 @@ const processMapAlertCheck = async (username, email) => {
         const client = getDbConnection();
         await client.connect();
 
-        // Get user's alert type
+        // Get user's alert type and id
         const alertQuery = `
-            SELECT a.alert_type, a.map_count
+            SELECT a.id, a.alert_type, a.map_count
             FROM alerts a
             JOIN users u ON a.user_id = u.id
             WHERE u.username = $1
@@ -160,17 +162,50 @@ const processMapAlertCheck = async (username, email) => {
             return { success: true, recordsFound: 0, phase: 1 };
         }
 
-        const { alert_type, map_count } = alertRows[0];
+        const { id: alertId, alert_type, map_count } = alertRows[0];
         console.log(`📊 User ${username} has ${map_count} maps with ${alert_type} mode`);
 
-        const finalAlertType = alert_type;
+        let finalAlertType = alert_type;
         let newRecords = [];
         let mapperContent = '';
+
+        // Auto-switch to inaccurate when user has > 100 maps (accurate mode only)
+        if (finalAlertType === 'accurate') {
+            const mapList = await fetchMapListOnly(username);
+            const mapCount = mapList.length;
+
+            // Always persist map count for admin panel
+            if (alertId) {
+                await client.query(
+                    'UPDATE alerts SET map_count = $1 WHERE id = $2',
+                    [mapCount, alertId]
+                );
+            }
+
+            if (mapCount > AUTO_INACCURATE_MAP_THRESHOLD) {
+                console.log(`🔄 Auto-switching ${username} to inaccurate mode (${mapCount} maps > ${AUTO_INACCURATE_MAP_THRESHOLD})`);
+
+                if (alertId && mapList.length > 0) {
+                    await client.query(
+                        'UPDATE alerts SET alert_type = $1, map_count = $2 WHERE id = $3',
+                        ['inaccurate', mapCount, alertId]
+                    );
+
+                    for (const map of mapList) {
+                        await client.query(
+                            'INSERT INTO alert_maps (alert_id, mapid) VALUES ($1, $2) ON CONFLICT (alert_id, mapid) DO NOTHING',
+                            [alertId, map.MapUid]
+                        );
+                    }
+                    console.log(`✅ Populated alert_maps with ${mapList.length} maps for ${username}`);
+                    finalAlertType = 'inaccurate';
+                }
+            }
+        }
 
         if (finalAlertType === 'accurate') {
             // Traditional accurate mode - fetch full leaderboards
             console.log(`🎯 Processing ${username} in accurate mode`);
-            // fetchMapsAndLeaderboards already has retry logic built in, no need to wrap in withRetry
             newRecords = await fetchMapsAndLeaderboards(username, '1d');
 
             // Cache leaderboard data for each map
@@ -188,7 +223,7 @@ const processMapAlertCheck = async (username, email) => {
         } else if (finalAlertType === 'inaccurate') {
             // Inaccurate mode - use position API
             console.log(`⚡ Processing ${username} in inaccurate mode`);
-            newRecords = await processInaccurateMode(username, client);
+            newRecords = await processInaccurateMode(username, client, alertId);
 
             if (newRecords.length > 0) {
                 console.log(`📊 Found ${newRecords.length} new records for ${username}`);
@@ -222,7 +257,7 @@ const processMapAlertCheck = async (username, email) => {
 };
 
 // Process inaccurate mode using position API
-const processInaccurateMode = async (username, client) => {
+const processInaccurateMode = async (username, client, alertId) => {
     console.log(`⚡ Processing inaccurate mode for ${username}`);
 
     try {
@@ -241,6 +276,14 @@ const processInaccurateMode = async (username, client) => {
         if (mapUids.length === 0) {
             console.log(`ℹ️ No maps found for ${username}`);
             return [];
+        }
+
+        // Persist map count for admin panel
+        if (alertId) {
+            await client.query(
+                'UPDATE alerts SET map_count = $1 WHERE id = $2',
+                [mapUids.length, alertId]
+            );
         }
 
         console.log(`🗺️ Checking positions for ${mapUids.length} maps`);

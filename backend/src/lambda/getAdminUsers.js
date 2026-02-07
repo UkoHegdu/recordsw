@@ -76,7 +76,7 @@ exports.handler = async (event, context) => {
                     a.alert_type,
                     a.id as alert_id,
                     a.created_at as alert_created_at,
-                    (SELECT COUNT(*)::int FROM alert_maps am WHERE am.alert_id = a.id) as map_count,
+                    COALESCE(a.map_count, (SELECT COUNT(*) FROM alert_maps am WHERE am.alert_id = a.id))::int as map_count,
                     (SELECT COUNT(*)::int FROM driver_notifications dn WHERE dn.user_id = u.id) as driver_notifications_count
                 FROM users u
                 LEFT JOIN alerts a ON u.id = a.user_id

@@ -58,14 +58,13 @@ interface Feedback {
 }
 
 const ConfigModal: React.FC<{
-    configKey: string;
     title: string;
     description: string;
     value: string;
     onChange: (v: string) => void;
     onSave: () => void;
     onCancel: () => void;
-}> = ({ configKey, title, description, value, onChange, onSave, onCancel }) => (
+}> = ({ title, description, value, onChange, onSave, onCancel }) => (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 max-w-md w-full mx-4">
             <div className="flex justify-between items-center mb-4">
@@ -746,7 +745,6 @@ const Admin: React.FC = () => {
                 {/* Config Modal */}
                 {activeModal && (
                     <ConfigModal
-                        configKey={activeModal}
                         title={`Configure ${activeModal.replace(/_/g, ' ')}`}
                         description={configs.find(c => c.config_key === activeModal)?.description || ''}
                         value={editValue}
