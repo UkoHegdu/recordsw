@@ -64,7 +64,7 @@ exports.handler = async (event, context) => {
         const client = getDbConnection();
         await client.connect();
 
-        // Get all users (including admins) with their alert information
+        // Get all users with alert info, map count from alert_maps, and driver notifications count
         const query = `
             SELECT * FROM (
                 SELECT DISTINCT ON (u.id)
@@ -74,8 +74,10 @@ exports.handler = async (event, context) => {
                     u.email,
                     u.created_at,
                     a.alert_type,
-                    a.map_count,
-                    a.created_at as alert_created_at
+                    a.id as alert_id,
+                    a.created_at as alert_created_at,
+                    (SELECT COUNT(*)::int FROM alert_maps am WHERE am.alert_id = a.id) as map_count,
+                    (SELECT COUNT(*)::int FROM driver_notifications dn WHERE dn.user_id = u.id) as driver_notifications_count
                 FROM users u
                 LEFT JOIN alerts a ON u.id = a.user_id
                 ORDER BY u.id, a.created_at DESC NULLS LAST
@@ -93,7 +95,9 @@ exports.handler = async (event, context) => {
             email: row.email,
             created_at: row.created_at,
             alert_type: row.alert_type || 'none',
-            map_count: row.map_count || 0,
+            alert_id: row.alert_id,
+            map_count: Number(row.map_count) || 0,
+            driver_notifications_count: Number(row.driver_notifications_count) || 0,
             alert_created_at: row.alert_created_at
         }));
 

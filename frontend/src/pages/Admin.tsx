@@ -14,7 +14,9 @@ interface User {
     username: string;
     tm_username: string;
     map_count: number;
+    driver_notifications_count: number;
     alert_type: string;
+    alert_id: number | null;
     alert_created_at: string;
 }
 
@@ -25,19 +27,11 @@ interface DailySummary {
     overall_status: 'success' | 'partial' | 'error';
     status_message: string;
     stats: {
-        total_users: number;
-        mapper_alerts: {
-            successful: number;
-            no_new_times: number;
-            errors: number;
-            total_records: number;
-        };
-        driver_notifications: {
-            successful: number;
-            no_new_times: number;
-            errors: number;
-            total_notifications: number;
-        };
+        num_users: number;
+        num_mapper_alerts: number;
+        num_driver_notifications: number;
+        num_notifications_sent: number;
+        num_errors: number;
     };
     user_breakdown: Array<{
         username: string;
@@ -63,6 +57,62 @@ interface Feedback {
     read_at: string | null;
 }
 
+const ConfigModal: React.FC<{
+    configKey: string;
+    title: string;
+    description: string;
+    value: string;
+    onChange: (v: string) => void;
+    onSave: () => void;
+    onCancel: () => void;
+}> = ({ configKey, title, description, value, onChange, onSave, onCancel }) => (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 max-w-md w-full mx-4">
+            <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-foreground">{title}</h3>
+                <button
+                    onClick={onCancel}
+                    className="text-muted-foreground hover:text-foreground"
+                >
+                    <X className="w-5 h-5" />
+                </button>
+            </div>
+
+            <p className="text-sm text-muted-foreground mb-4">{description}</p>
+
+            <div className="space-y-4">
+                <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                        New Value
+                    </label>
+                    <input
+                        type="text"
+                        value={value}
+                        onChange={(e) => onChange(e.target.value)}
+                        className="w-full px-3 py-2 border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                        placeholder="Enter new value"
+                    />
+                </div>
+
+                <div className="flex gap-3">
+                    <button
+                        onClick={onSave}
+                        className="flex-1 btn-racing"
+                    >
+                        Save
+                    </button>
+                    <button
+                        onClick={onCancel}
+                        className="flex-1 px-4 py-2 border border-border rounded-lg text-foreground hover:bg-muted"
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+);
+
 const Admin: React.FC = () => {
     const [configs, setConfigs] = useState<ConfigValue[]>([]);
     const [users, setUsers] = useState<User[]>([]);
@@ -71,6 +121,7 @@ const Admin: React.FC = () => {
     const [editValue, setEditValue] = useState('');
     const [activeTab, setActiveTab] = useState<'users' | 'logs' | 'test' | 'feedback'>('users');
     const [dailySummaries, setDailySummaries] = useState<DailySummary[]>([]);
+    const [overallStats, setOverallStats] = useState<{ maps_checked: number; notifications_sent: number; total_errors: number } | null>(null);
     const [logsLoading, setLogsLoading] = useState(false);
     const [selectedDay, setSelectedDay] = useState<DailySummary | null>(null);
     const [showDetailModal, setShowDetailModal] = useState(false);
@@ -142,7 +193,8 @@ const Admin: React.FC = () => {
         try {
             setLogsLoading(true);
             const response = await apiClient.get('/api/v1/admin/daily-overview');
-            setDailySummaries(response.data.daily_summaries);
+            setDailySummaries(response.data.daily_summaries || []);
+            setOverallStats(response.data.overall || null);
         } catch (error) {
             console.error('Error fetching daily overview:', error);
             toast.error('Failed to fetch daily overview');
@@ -391,57 +443,6 @@ const Admin: React.FC = () => {
         toast.success('All test notifications cleared!');
     };
 
-    const ConfigModal: React.FC<{ configKey: string; title: string; description: string }> = ({ configKey, title, description }) => (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 max-w-md w-full mx-4">
-                <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-semibold text-foreground">{title}</h3>
-                    <button
-                        onClick={() => setActiveModal(null)}
-                        className="text-muted-foreground hover:text-foreground"
-                    >
-                        <X className="w-5 h-5" />
-                    </button>
-                </div>
-
-                <p className="text-sm text-muted-foreground mb-4">{description}</p>
-
-                <div className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-foreground mb-2">
-                            New Value
-                        </label>
-                        <input
-                            type="text"
-                            value={editValue}
-                            onChange={(e) => setEditValue(e.target.value)}
-                            className="w-full px-3 py-2 border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                            placeholder="Enter new value"
-                        />
-                    </div>
-
-                    <div className="flex gap-3">
-                        <button
-                            onClick={() => {
-                                saveConfig(configKey);
-                                setActiveModal(null);
-                            }}
-                            className="flex-1 btn-racing"
-                        >
-                            Save
-                        </button>
-                        <button
-                            onClick={() => setActiveModal(null)}
-                            className="flex-1 px-4 py-2 border border-border rounded-lg text-foreground hover:bg-muted"
-                        >
-                            Cancel
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-6">
             <div className="max-w-7xl mx-auto">
@@ -566,6 +567,7 @@ const Admin: React.FC = () => {
                                                 <th className="text-left py-3 px-4 font-medium text-foreground">Username</th>
                                                 <th className="text-left py-3 px-4 font-medium text-foreground">TM Username</th>
                                                 <th className="text-left py-3 px-4 font-medium text-foreground">Maps</th>
+                                                <th className="text-left py-3 px-4 font-medium text-foreground">Driver Notifications</th>
                                                 <th className="text-left py-3 px-4 font-medium text-foreground">Alert Type</th>
                                                 <th className="text-left py-3 px-4 font-medium text-foreground">Actions</th>
                                             </tr>
@@ -576,31 +578,40 @@ const Admin: React.FC = () => {
                                                     <td className="py-3 px-4 text-foreground">{user.username}</td>
                                                     <td className="py-3 px-4 text-muted-foreground">{user.tm_username || 'Not set'}</td>
                                                     <td className="py-3 px-4 text-muted-foreground">{user.map_count}</td>
+                                                    <td className="py-3 px-4 text-muted-foreground">{user.driver_notifications_count ?? 0}</td>
                                                     <td className="py-3 px-4">
-                                                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${user.alert_type === 'accurate'
-                                                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                                                            : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                                                            }`}>
-                                                            {user.alert_type}
-                                                        </span>
+                                                        {user.alert_type === 'none' ? (
+                                                            <span className="text-muted-foreground">—</span>
+                                                        ) : (
+                                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${user.alert_type === 'accurate'
+                                                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                                                : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                                                                }`}>
+                                                                {user.alert_type}
+                                                            </span>
+                                                        )}
                                                     </td>
                                                     <td className="py-3 px-4">
-                                                        <div className="flex gap-2">
-                                                            <button
-                                                                onClick={() => updateUserAlertType(user.id, 'accurate')}
-                                                                disabled={user.alert_type === 'accurate'}
-                                                                className="px-3 py-1 text-xs bg-green-100 text-green-800 rounded hover:bg-green-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                                                            >
-                                                                Accurate
-                                                            </button>
-                                                            <button
-                                                                onClick={() => updateUserAlertType(user.id, 'inaccurate')}
-                                                                disabled={user.alert_type === 'inaccurate'}
-                                                                className="px-3 py-1 text-xs bg-yellow-100 text-yellow-800 rounded hover:bg-yellow-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                                                            >
-                                                                Inaccurate
-                                                            </button>
-                                                        </div>
+                                                        {user.alert_type === 'none' ? (
+                                                            <span className="text-muted-foreground text-sm">No mapper alerts</span>
+                                                        ) : (
+                                                            <div className="flex gap-2">
+                                                                <button
+                                                                    onClick={() => updateUserAlertType(user.id, 'accurate')}
+                                                                    disabled={user.alert_type === 'accurate'}
+                                                                    className="px-3 py-1 text-xs bg-green-100 text-green-800 rounded hover:bg-green-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                >
+                                                                    Accurate
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => updateUserAlertType(user.id, 'inaccurate')}
+                                                                    disabled={user.alert_type === 'inaccurate'}
+                                                                    className="px-3 py-1 text-xs bg-yellow-100 text-yellow-800 rounded hover:bg-yellow-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                >
+                                                                    Inaccurate
+                                                                </button>
+                                                            </div>
+                                                        )}
                                                     </td>
                                                 </tr>
                                             ))}
@@ -659,21 +670,25 @@ const Admin: React.FC = () => {
 
                                                     <div className="space-y-1 text-xs text-muted-foreground">
                                                         <div className="flex justify-between">
-                                                            <span>Users:</span>
-                                                            <span className="font-medium">{day.stats.total_users}</span>
+                                                            <span>No. of Users:</span>
+                                                            <span className="font-medium">{day.stats.num_users}</span>
                                                         </div>
                                                         <div className="flex justify-between">
-                                                            <span>Mapper Alerts:</span>
-                                                            <span className="font-medium">{day.stats.mapper_alerts.successful + day.stats.mapper_alerts.no_new_times}</span>
+                                                            <span>No. of Mapper Alerts:</span>
+                                                            <span className="font-medium">{day.stats.num_mapper_alerts}</span>
                                                         </div>
                                                         <div className="flex justify-between">
-                                                            <span>Driver Notifications:</span>
-                                                            <span className="font-medium">{day.stats.driver_notifications.successful + day.stats.driver_notifications.no_new_times}</span>
+                                                            <span>No. of Driver Notifications:</span>
+                                                            <span className="font-medium">{day.stats.num_driver_notifications}</span>
                                                         </div>
-                                                        {day.stats.mapper_alerts.errors + day.stats.driver_notifications.errors > 0 && (
+                                                        <div className="flex justify-between">
+                                                            <span>No. of Notifications Sent:</span>
+                                                            <span className="font-medium">{day.stats.num_notifications_sent}</span>
+                                                        </div>
+                                                        {day.stats.num_errors > 0 && (
                                                             <div className="flex justify-between text-red-600 dark:text-red-400">
                                                                 <span>Errors:</span>
-                                                                <span className="font-medium">{day.stats.mapper_alerts.errors + day.stats.driver_notifications.errors}</span>
+                                                                <span className="font-medium">{day.stats.num_errors}</span>
                                                             </div>
                                                         )}
                                                     </div>
@@ -690,8 +705,8 @@ const Admin: React.FC = () => {
                                         </div>
                                     )}
 
-                                    {/* Summary Stats - Only show when there's data */}
-                                    {dailySummaries.length > 0 && (
+                                    {/* Summary Stats */}
+                                    {overallStats && (
                                         <div className="racing-card">
                                             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                                                 <BarChart3 className="w-5 h-5" />
@@ -701,21 +716,21 @@ const Admin: React.FC = () => {
                                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                                 <div className="text-center">
                                                     <div className="text-2xl font-bold text-green-500 mb-1">
-                                                        {dailySummaries.reduce((sum, day) => sum + day.stats.mapper_alerts.successful + day.stats.mapper_alerts.no_new_times, 0)}
+                                                        {overallStats.maps_checked}
                                                     </div>
-                                                    <div className="text-sm text-muted-foreground">Successful Mapper Alerts</div>
+                                                    <div className="text-sm text-muted-foreground">Maps Checked</div>
                                                 </div>
 
                                                 <div className="text-center">
                                                     <div className="text-2xl font-bold text-blue-500 mb-1">
-                                                        {dailySummaries.reduce((sum, day) => sum + day.stats.driver_notifications.successful + day.stats.driver_notifications.no_new_times, 0)}
+                                                        {overallStats.notifications_sent}
                                                     </div>
-                                                    <div className="text-sm text-muted-foreground">Successful Driver Notifications</div>
+                                                    <div className="text-sm text-muted-foreground">Successful Notifications Sent</div>
                                                 </div>
 
                                                 <div className="text-center">
                                                     <div className="text-2xl font-bold text-red-500 mb-1">
-                                                        {dailySummaries.reduce((sum, day) => sum + day.stats.mapper_alerts.errors + day.stats.driver_notifications.errors, 0)}
+                                                        {overallStats.total_errors}
                                                     </div>
                                                     <div className="text-sm text-muted-foreground">Total Errors</div>
                                                 </div>
@@ -734,6 +749,13 @@ const Admin: React.FC = () => {
                         configKey={activeModal}
                         title={`Configure ${activeModal.replace(/_/g, ' ')}`}
                         description={configs.find(c => c.config_key === activeModal)?.description || ''}
+                        value={editValue}
+                        onChange={setEditValue}
+                        onSave={() => {
+                            saveConfig(activeModal);
+                            setActiveModal(null);
+                        }}
+                        onCancel={() => setActiveModal(null)}
                     />
                 )}
 
@@ -813,7 +835,7 @@ const Admin: React.FC = () => {
                                                             <div className="flex items-center gap-2 mb-1">
                                                                 {getNotificationStatusIcon(user.driver_notification.status)}
                                                                 <span className="text-sm font-medium capitalize">
-                                                                    {user.driver_notification.status.replace('_', ' ')}
+                                                                    {user.driver_notification.status === 'no_new_times' ? 'No new records' : user.driver_notification.status.replace('_', ' ')}
                                                                 </span>
                                                             </div>
                                                             <p className="text-xs text-muted-foreground">
