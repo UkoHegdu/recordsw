@@ -55,6 +55,28 @@ App will be at **http://YOUR_SERVER_IP/** (port 80).
 
 ---
 
+## 5. Daily cron (scheduler)
+
+The daily job (mapper alerts, driver notifications, email send) runs only when something calls `POST /api/v1/cron/daily`. On the server, use a crontab so it runs once per day.
+
+1. Ensure **CRON_SECRET** is set in `~/app/.env` (same value the backend uses).
+2. Make the script executable and add a crontab line:
+
+```bash
+chmod +x ~/app/deploy/cron-daily.sh
+crontab -e
+```
+
+Add one line (runs at 06:00 server time; change the time if you like):
+
+```
+0 6 * * * /root/app/deploy/cron-daily.sh
+```
+
+If the app lives elsewhere (e.g. `/home/user/app`), use that path. To test without waiting for cron: `cd ~/app && ./deploy/cron-daily.sh`.
+
+---
+
 ## Optional: SSH config on your machine
 
 Add to `~/.ssh/config` so you can run `ssh recordsw`:
