@@ -81,6 +81,20 @@ exports.handler = async (event, context) => {
     };
 };
 
+/** Run after response is sent: fetch map count from TM Exchange and update the alert. */
+async function updateMapCountInBackground(alertId, username) {
+    const client = getDbConnection();
+    try {
+        const mapList = await fetchMapListOnly(username);
+        const mapCount = mapList.length;
+        await client.connect();
+        await client.query('UPDATE alerts SET map_count = $1 WHERE id = $2', [mapCount, alertId]);
+        console.log(`📊 Background: updated alert ${alertId} map_count to ${mapCount}`);
+    } finally {
+        await client.end();
+    }
+}
+
 async function handleGetAlerts(event, headers) {
     console.log('📋 Fetching alerts...');
 
@@ -201,35 +215,22 @@ async function handleCreateAlert(event, headers) {
         console.log(`Creating alert for user: ${username} (${email})`);
 
         const alertType = body.alert_type || 'accurate';
+        const initialMapCount = body.MapCount ?? 0;
 
-        // Fetch map count from Trackmania Exchange (author param uses username, not tm_username)
-        let mapCount = body.MapCount ?? 0;
-        if (username) {
-            try {
-                const mapList = await fetchMapListOnly(username);
-                mapCount = mapList.length;
-                console.log(`📊 Fetched map count from TM Exchange: ${mapCount}`);
-            } catch (err) {
-                console.warn(`Could not fetch map count for ${username}, using body value:`, err.message);
-            }
-        }
-
-        console.log(`📊 Map count: ${mapCount}, Alert type: ${alertType}`);
-
-        // Insert alert with actual user_id from JWT token, alert type, and map count
+        // Insert alert immediately so the user gets a fast response
         const alertResult = await client.query(
             'INSERT INTO alerts (username, email, user_id, alert_type, map_count, created_at) VALUES ($1, $2, $3, $4, $5, NOW()) RETURNING id',
-            [username, email, userId, alertType, mapCount]
+            [username, email, userId, alertType, initialMapCount]
         );
 
         const alertId = alertResult.rows[0].id;
         console.log(`✅ Alert created successfully for user ${userId} with ID ${alertId}`);
 
-        // If inaccurate mode, initialize position data for all maps
-        if (alertType === 'inaccurate' && mapCount > 0) {
-            console.log(`🚀 Initializing position data for ${mapCount} maps in inaccurate mode`);
-            // Note: Position initialization will be handled by the mapSearchBackground process
-            // when it processes the alert maps
+        // Update map count in background (TM Exchange fetch can be slow for many maps)
+        if (username) {
+            updateMapCountInBackground(alertId, username).catch(err =>
+                console.warn('Background map count update failed:', err.message)
+            );
         }
 
         return {
@@ -240,7 +241,7 @@ async function handleCreateAlert(event, headers) {
                 msg: 'Alert created successfully',
                 alert_id: alertId,
                 alert_type: alertType,
-                map_count: mapCount
+                map_count: initialMapCount
             })
         };
 

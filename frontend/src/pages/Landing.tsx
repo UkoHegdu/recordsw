@@ -319,7 +319,7 @@ const Landing: React.FC<LandingProps> = ({ isLoggedIn: isLoggedInProp }) => {
                                         to="/login"
                                         className="btn-racing inline-flex items-center gap-2 text-lg"
                                     >
-                                        Get Started
+                                        Log in
                                         <ArrowRight size={20} />
                                     </Link>
                                     <Link

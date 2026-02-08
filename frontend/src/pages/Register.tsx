@@ -6,6 +6,7 @@ import apiClient from '../auth';
 const Register: React.FC = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [usernameQuery, setUsernameQuery] = useState('');
     const [matchedUsers, setMatchedUsers] = useState<string[]>([]);
     const [selectedUsername, setSelectedUsername] = useState('');
@@ -15,8 +16,13 @@ const Register: React.FC = () => {
 
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
+        setError('');
         if (!selectedUsername) {
             setError('Please select a Trackmania username.');
+            return;
+        }
+        if (password !== confirmPassword) {
+            setError('Passwords do not match.');
             return;
         }
 
@@ -83,6 +89,18 @@ const Register: React.FC = () => {
                                     placeholder="Password (min 8 characters)"
                                     value={password}
                                     onChange={e => setPassword(e.target.value)}
+                                    required
+                                    minLength={8}
+                                    className="w-full px-4 py-3 bg-muted border border-border rounded-xl text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300"
+                                />
+                            </div>
+
+                            <div>
+                                <input
+                                    type="password"
+                                    placeholder="Confirm password"
+                                    value={confirmPassword}
+                                    onChange={e => setConfirmPassword(e.target.value)}
                                     required
                                     minLength={8}
                                     className="w-full px-4 py-3 bg-muted border border-border rounded-xl text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300"

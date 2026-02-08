@@ -22,11 +22,15 @@ function verifySecret(req) {
   const secret = process.env.CRON_SECRET;
   if (!secret) return false;
   const auth = req.headers.authorization;
-  return !!(auth && auth.startsWith('Bearer ') && auth.slice(7) === secret);
+  if (auth && auth.startsWith('Bearer ') && auth.slice(7) === secret) return true;
+  if (req.query && req.query.secret === secret) return true;
+  if (req.body && req.body.secret === secret) return true;
+  return false;
 }
 
 router.post('/cron/daily', async (req, res) => {
   if (!verifySecret(req)) {
+    console.warn('Cron auth failed: query.secret=' + (req.query && req.query.secret ? 'present' : 'missing') + ', body.secret=' + (req.body && req.body.secret ? 'present' : 'missing'));
     return res.status(401).json({ error: 'Unauthorized' });
   }
 

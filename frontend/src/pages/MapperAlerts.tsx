@@ -49,6 +49,7 @@ const MapperAlerts: React.FC = () => {
     const [userLoginInfo, setUserLoginInfo] = useState<{ username: string, email: string } | null>(null);
     const [notificationHistory, setNotificationHistory] = useState<NotificationHistory[]>([]);
     const [historyLoading, setHistoryLoading] = useState(false);
+    const [isCreatingAlert, setIsCreatingAlert] = useState(false);
 
     const fetchUserLoginInfo = async () => {
         try {
@@ -180,13 +181,12 @@ const MapperAlerts: React.FC = () => {
     };
 
     const handleConfirmAddAlert = async () => {
+        if (isCreatingAlert) return;
+        setIsCreatingAlert(true);
         try {
-            // Get map count from user's maps (this would come from the map search API)
-            const mapCount = alerts.length; // This is a placeholder - in reality, we'd get this from the API
-
             const response = await apiClient.post('/api/v1/users/alerts', {
-                MapCount: mapCount,
-                alert_type: 'accurate' // Default to accurate, will be auto-switched if needed
+                MapCount: 0,
+                alert_type: 'accurate' // Backend creates instantly; map count is updated in background
             });
 
             if (response.data.auto_switched) {
@@ -199,6 +199,8 @@ const MapperAlerts: React.FC = () => {
             fetchAlerts();
         } catch (error: unknown) {
             toast.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to create alert');
+        } finally {
+            setIsCreatingAlert(false);
         }
     };
 
@@ -526,16 +528,27 @@ const MapperAlerts: React.FC = () => {
                             </div>
                             <div className="flex gap-3">
                                 <button
+                                    type="button"
                                     onClick={handleCancelAddAlert}
-                                    className="flex-1 px-4 py-2 rounded-xl border border-border hover:bg-muted/50 transition-colors duration-300"
+                                    disabled={isCreatingAlert}
+                                    className="flex-1 px-4 py-2 rounded-xl border border-border hover:bg-muted/50 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     Cancel
                                 </button>
                                 <button
+                                    type="button"
                                     onClick={handleConfirmAddAlert}
-                                    className="flex-1 btn-racing"
+                                    disabled={isCreatingAlert}
+                                    className="flex-1 btn-racing flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                                 >
-                                    OK
+                                    {isCreatingAlert ? (
+                                        <>
+                                            <span className="inline-block w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                                            Creating…
+                                        </>
+                                    ) : (
+                                        'OK'
+                                    )}
                                 </button>
                             </div>
                         </div>
