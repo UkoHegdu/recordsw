@@ -8,7 +8,7 @@ const getDbConnection = () => {
     return new Client({
         connectionString: connectionString,
         ssl: {
-            rejectUnauthorized: false
+            rejectUnauthorized: true
         }
     });
 };

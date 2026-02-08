@@ -9,7 +9,7 @@ const getDbConnection = () => {
     return new Client({
         connectionString: connectionString,
         ssl: {
-            rejectUnauthorized: false
+            rejectUnauthorized: true
         }
     });
 };
@@ -114,17 +114,7 @@ exports.handler = async (event, context) => {
             };
         }
 
-        // Check if email already exists
-        const existingEmail = await client.query('SELECT id FROM users WHERE email = $1', [email]);
-        if (existingEmail.rows.length > 0) {
-            return {
-                statusCode: 400,
-                headers: headers,
-                body: JSON.stringify({ msg: 'Email already registered' })
-            };
-        }
-
-        // Check if username already exists
+        // Check if Trackmania username already exists (one account per TM username)
         const existingUsername = await client.query('SELECT id FROM users WHERE username = $1', [username]);
         if (existingUsername.rows.length > 0) {
             return {

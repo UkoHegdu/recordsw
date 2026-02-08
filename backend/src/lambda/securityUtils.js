@@ -56,8 +56,8 @@ const validateEmail = (email) => {
 const validatePassword = (password) => {
     if (!password || typeof password !== 'string') return false;
 
-    // Password requirements: 6+ chars (relaxed for existing users)
-    return password.length >= 6;
+    // Password requirements: min 8 chars
+    return password.length >= 8;
 };
 
 const validateUsername = (username) => {

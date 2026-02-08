@@ -171,7 +171,7 @@ insert into users (
    created_at
 ) values ( 'teh_macho',
            'fantomass@gmail.com',
-           '$2a$12$dBGjEMxqGcsXsb3bJ2Q5BuaQk61XrreSQnc6eHqCTmRsnJtha4s6K',
+           '',
            'admin',
            now() );
 

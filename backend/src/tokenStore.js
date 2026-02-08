@@ -9,7 +9,7 @@ function getClient() {
   if (!connectionString) throw new Error('NEON_DB_CONNECTION_STRING required');
   return new Client({
     connectionString,
-    ssl: { rejectUnauthorized: false },
+    ssl: { rejectUnauthorized: true },
   });
 }
 

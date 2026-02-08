@@ -1,6 +1,6 @@
 /**
  * Cron route (backend only). POST /api/v1/cron/daily runs Phase 1 (mapper) → Phase 2 (driver) → Phase 3 (send).
- * Protected by CRON_SECRET: Authorization: Bearer <CRON_SECRET> or ?secret=<CRON_SECRET>.
+ * Protected by CRON_SECRET: Authorization: Bearer <CRON_SECRET> only (no query param).
  */
 const express = require('express');
 const { Client } = require('pg');
@@ -14,7 +14,7 @@ function getClient() {
   if (!connectionString) throw new Error('NEON_DB_CONNECTION_STRING required');
   return new Client({
     connectionString,
-    ssl: { rejectUnauthorized: false },
+    ssl: { rejectUnauthorized: true },
   });
 }
 
@@ -22,9 +22,7 @@ function verifySecret(req) {
   const secret = process.env.CRON_SECRET;
   if (!secret) return false;
   const auth = req.headers.authorization;
-  if (auth && auth.startsWith('Bearer ') && auth.slice(7) === secret) return true;
-  if (req.query.secret === secret) return true;
-  return false;
+  return !!(auth && auth.startsWith('Bearer ') && auth.slice(7) === secret);
 }
 
 router.post('/cron/daily', async (req, res) => {

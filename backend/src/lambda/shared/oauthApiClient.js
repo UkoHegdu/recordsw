@@ -13,7 +13,6 @@ const getValidOAuth2Token = async () => {
         const twentyFourHours = 24 * 60 * 60 * 1000;
 
         if (accessItem?.token && tokenAge < twentyFourHours) {
-            console.log('✅ Using existing OAuth2 access token (less than 24 hours old)');
             return accessItem.token;
         }
 

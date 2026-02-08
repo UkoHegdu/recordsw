@@ -182,7 +182,7 @@ const checkAndInitializePositions = async (username) => {
             return new Client({
                 connectionString: connectionString,
                 ssl: {
-                    rejectUnauthorized: false
+                    rejectUnauthorized: true
                 }
             });
         };

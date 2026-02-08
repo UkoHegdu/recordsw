@@ -138,7 +138,7 @@ const processMapAlertCheck = async (username, email) => {
             return new Client({
                 connectionString: connectionString,
                 ssl: {
-                    rejectUnauthorized: false
+                    rejectUnauthorized: true
                 }
             });
         };
@@ -383,7 +383,7 @@ const processDriverNotificationCheck = async (username, email) => {
             return new Client({
                 connectionString: connectionString,
                 ssl: {
-                    rejectUnauthorized: false
+                    rejectUnauthorized: true
                 }
             });
         };
@@ -655,7 +655,7 @@ const logNotificationHistory = async (username, notificationType, status, messag
             return new Client({
                 connectionString: connectionString,
                 ssl: {
-                    rejectUnauthorized: false
+                    rejectUnauthorized: true
                 }
             });
         };

@@ -10,7 +10,7 @@ const getDbConnection = () => {
     return new Client({
         connectionString: connectionString,
         ssl: {
-            rejectUnauthorized: false
+            rejectUnauthorized: true
         }
     });
 };
@@ -103,11 +103,6 @@ async function handleGetAlerts(event, headers) {
         await client.connect();
         console.log('✅ Connected to Neon database');
 
-        // Debug: Check what alerts exist in the database
-        const allAlerts = await client.query('SELECT id, username, email, user_id, created_at FROM alerts ORDER BY created_at DESC');
-        console.log('🔍 All alerts in database:', allAlerts.rows);
-
-        // Fetch alerts for the user
         const result = await client.query(
             'SELECT id, username, email, created_at FROM alerts WHERE user_id = $1 ORDER BY created_at DESC',
             [userId]

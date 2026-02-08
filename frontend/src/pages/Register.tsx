@@ -80,10 +80,11 @@ const Register: React.FC = () => {
                             <div>
                                 <input
                                     type="password"
-                                    placeholder="Password"
+                                    placeholder="Password (min 8 characters)"
                                     value={password}
                                     onChange={e => setPassword(e.target.value)}
                                     required
+                                    minLength={8}
                                     className="w-full px-4 py-3 bg-muted border border-border rounded-xl text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300"
                                 />
                             </div>

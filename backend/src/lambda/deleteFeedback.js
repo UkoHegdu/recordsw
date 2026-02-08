@@ -6,7 +6,7 @@ const getDbConnection = () => {
     const connectionString = process.env.NEON_DB_CONNECTION_STRING;
     return new Client({
         connectionString,
-        ssl: { rejectUnauthorized: false }
+        ssl: { rejectUnauthorized: true }
     });
 };
 

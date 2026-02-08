@@ -16,8 +16,14 @@ const cron = require('./routes/cron');
 
 const app = express();
 
+app.set('trust proxy', 1);
+
+const allowedOrigins = process.env.ALLOWED_ORIGIN
+  ? process.env.ALLOWED_ORIGIN.split(',').map((o) => o.trim()).filter(Boolean)
+  : true;
+
 app.use(cors({
-  origin: true,
+  origin: allowedOrigins,
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Amz-Date', 'X-Api-Key', 'X-Amz-Security-Token'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']

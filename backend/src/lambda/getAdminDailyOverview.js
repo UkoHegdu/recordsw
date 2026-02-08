@@ -26,7 +26,7 @@ exports.handler = async (event, context) => {
 
         const client = new Client({
             connectionString: process.env.NEON_DB_CONNECTION_STRING,
-            ssl: { rejectUnauthorized: false }
+            ssl: { rejectUnauthorized: true }
         });
         await client.connect();
 

@@ -46,7 +46,7 @@ exports.handler = async (event, context) => {
             return new Client({
                 connectionString: connectionString,
                 ssl: {
-                    rejectUnauthorized: false
+                    rejectUnauthorized: true
                 }
             });
         };

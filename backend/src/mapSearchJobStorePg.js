@@ -10,7 +10,7 @@ function getClient() {
   if (!connectionString) throw new Error('NEON_DB_CONNECTION_STRING required for map search jobs');
   return new Client({
     connectionString,
-    ssl: { rejectUnauthorized: false },
+    ssl: { rejectUnauthorized: true },
   });
 }
 
