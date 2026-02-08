@@ -171,7 +171,7 @@ insert into users (
    created_at
 ) values ( 'teh_macho',
            'fantomass@gmail.com',
-           '',
+           ' ',
            'admin',
            now() );
 
