@@ -254,18 +254,19 @@ const checkAndInitializePositions = async (username) => {
         const positionResults = await checkMapPositions(uninitializedMaps);
 
         // Store initial positions
+        let initializedCount = 0;
         for (const result of positionResults) {
             if (result.found) {
                 await client.query(
                     'INSERT INTO map_positions (map_uid, position, score, last_checked) VALUES ($1, $2, $3, NOW())',
                     [result.map_uid, result.position, result.score]
                 );
-                console.log(`📝 Initialized position for map ${result.map_uid}: ${result.position}`);
+                initializedCount++;
             }
         }
 
         await client.end();
-        console.log(`✅ Position initialization completed for ${username}`);
+        console.log(`✅ Position initialization completed for ${username}: ${initializedCount} maps`);
         return true;
 
     } catch (error) {

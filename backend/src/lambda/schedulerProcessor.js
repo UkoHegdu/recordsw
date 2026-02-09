@@ -298,6 +298,7 @@ const processInaccurateMode = async (username, client, alertId) => {
         );
 
         const changedMaps = [];
+        let initializedCount = 0;
 
         // Compare with stored positions
         for (const result of positionResults) {
@@ -318,7 +319,7 @@ const processInaccurateMode = async (username, client, alertId) => {
                     'INSERT INTO map_positions (map_uid, position, score, last_checked) VALUES ($1, $2, $3, NOW())',
                     [result.map_uid, result.position, result.score]
                 );
-                console.log(`📝 Initialized position for map ${result.map_uid}: ${result.position}`);
+                initializedCount++;
                 continue;
             }
 
@@ -348,6 +349,9 @@ const processInaccurateMode = async (username, client, alertId) => {
             }
         }
 
+        if (initializedCount > 0) {
+            console.log(`📝 Position initialization complete for ${initializedCount} maps`);
+        }
         console.log(`📊 Found ${changedMaps.length} maps with new players`);
         return changedMaps;
 

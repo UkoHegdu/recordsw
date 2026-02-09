@@ -19,7 +19,6 @@ const checkMapPositions = async (mapUids) => {
     // Process maps in batches of 50 (API limit)
     for (let i = 0; i < mapUids.length; i += batchSize) {
         const batch = mapUids.slice(i, i + batchSize);
-        console.log(`📦 Processing batch ${Math.floor(i / batchSize) + 1}: ${batch.length} maps`);
 
         try {
             const batchResults = await checkBatchMapPositions(batch);
@@ -48,8 +47,6 @@ const checkBatchMapPositions = async (mapUids) => {
     const body = {
         maps: mapUids.map(mapUid => ({ mapUid, groupUid: 'Personal_Best' }))
     };
-
-    console.log(`🌐 Fetching positions for ${mapUids.length} maps`);
 
     try {
         const response = await apiClient.post(url, body);
