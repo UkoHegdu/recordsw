@@ -291,7 +291,14 @@ async function handleDeleteAlert(event, headers) {
         await client.connect();
         console.log('✅ Connected to Neon database');
 
-        // Delete the alert (only if it belongs to the user)
+        // Fetch map_uids before delete (alert_maps cascade-removed with alert)
+        const { rows: mapRows } = await client.query(
+            'SELECT mapid FROM alert_maps WHERE alert_id = $1',
+            [alertId]
+        );
+        const mapUids = mapRows.map(r => r.mapid);
+
+        // Delete the alert (only if it belongs to the user); cascade removes alert_maps
         const result = await client.query(
             'DELETE FROM alerts WHERE id = $1 AND user_id = $2',
             [alertId, userId]
@@ -306,6 +313,19 @@ async function handleDeleteAlert(event, headers) {
         }
 
         console.log(`✅ Alert ${alertId} deleted successfully for user ${userId}`);
+
+        // Clean up map_positions for maps no longer in any alert_maps
+        if (mapUids.length > 0) {
+            const { rowCount: deleted } = await client.query(
+                `DELETE FROM map_positions mp
+                 WHERE mp.map_uid = ANY($1::text[])
+                 AND NOT EXISTS (SELECT 1 FROM alert_maps am WHERE am.mapid = mp.map_uid)`,
+                [mapUids]
+            );
+            if (deleted > 0) {
+                console.log(`🗑️ Cleaned up ${deleted} orphaned map_positions rows`);
+            }
+        }
 
         return {
             statusCode: 200,
