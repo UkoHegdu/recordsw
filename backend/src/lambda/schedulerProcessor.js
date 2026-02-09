@@ -413,27 +413,30 @@ const processInaccurateMode = async (username, client, alertId) => {
 
         for (const change of positionChanges) {
             const leaderboardData = await fetchLeaderboardForMap(change.mapId);
-            changedMaps.push({
-                mapId: change.mapId,
-                mapName: change.mapName,
-                leaderboard: leaderboardData
-            });
+            if (leaderboardData.length > 0) {
+                changedMaps.push({
+                    mapId: change.mapId,
+                    mapName: change.mapName,
+                    leaderboard: leaderboardData
+                });
+            }
             await sleep(500);
         }
 
         for (const map of uninitializedMaps) {
             const leaderboardData = await fetchLeaderboardForMap(map.mapId);
-            changedMaps.push({
-                mapId: map.mapId,
-                mapName: map.mapName,
-                leaderboard: leaderboardData
-            });
+            if (leaderboardData.length > 0) {
+                changedMaps.push({
+                    mapId: map.mapId,
+                    mapName: map.mapName,
+                    leaderboard: leaderboardData
+                });
+            }
             await sleep(500);
         }
 
-        const mapsWithRecords = changedMaps.filter(m => m.leaderboard.length > 0);
-        console.log(`📊 Found ${mapsWithRecords.length} maps with new players`);
-        return { records: mapsWithRecords, overflowMapCount: 0 };
+        console.log(`📊 Found ${changedMaps.length} maps with new players`);
+        return { records: changedMaps, overflowMapCount: 0 };
     } catch (error) {
         console.error(`❌ Error processing inaccurate mode for ${username}:`, error);
         throw error;
