@@ -54,7 +54,6 @@ const checkBatchMapPositions = async (mapUids) => {
             const mapPositionData = positionData[mapUid];
 
             if (!mapPositionData || !Array.isArray(mapPositionData)) {
-                console.warn(`⚠️ No position data for map ${mapUid}`);
                 continue;
             }
 
