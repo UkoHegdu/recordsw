@@ -1,0 +1,12 @@
+# HTTPS for tmrecords.mooo.com - auto certificates via Let's Encrypt
+tmrecords.mooo.com {
+    handle /api/* {
+        reverse_proxy backend:3000
+    }
+    handle /health {
+        reverse_proxy backend:3000
+    }
+    handle {
+        reverse_proxy frontend:80
+    }
+}

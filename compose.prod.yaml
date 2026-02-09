@@ -1,17 +1,22 @@
 # Production: Hetzner CX11 + Neon DB. No local Postgres.
-# Reverse proxy exposes port 80 only; frontend uses same-origin /api.
+# Caddy reverse proxy: auto HTTPS, ports 80 + 443.
 
 services:
   reverse-proxy:
-    image: nginx:alpine
+    image: caddy:alpine
     ports:
       - "80:80"
+      - "443:443"
     volumes:
-      - ./deploy/nginx-reverse-proxy.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
     depends_on:
       - backend
       - frontend
     restart: unless-stopped
+
+volumes:
+  caddy_data:
 
   backend:
     build: ./backend
