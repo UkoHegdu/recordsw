@@ -81,8 +81,10 @@ exports.handler = async (event, context) => {
     };
 };
 
+const AUTO_INACCURATE_MAP_THRESHOLD = 100;
+
 /** Run after response is sent: fetch map count from TM Exchange and update the alert. */
-async function updateMapCountInBackground(alertId, username) {
+async function updateMapCountInBackground(alertId, username, alertType = 'accurate') {
     const client = getDbConnection();
     try {
         const mapList = await fetchMapListOnly(username);
@@ -90,6 +92,33 @@ async function updateMapCountInBackground(alertId, username) {
         await client.connect();
         await client.query('UPDATE alerts SET map_count = $1 WHERE id = $2', [mapCount, alertId]);
         console.log(`📊 Background: updated alert ${alertId} map_count to ${mapCount}`);
+
+        const shouldInitInaccurate = mapCount > AUTO_INACCURATE_MAP_THRESHOLD || alertType === 'inaccurate';
+        if (shouldInitInaccurate && mapCount > 0) {
+            await client.query(
+                'UPDATE alerts SET alert_type = $1 WHERE id = $2',
+                ['inaccurate', alertId]
+            );
+            for (const map of mapList) {
+                await client.query(
+                    'INSERT INTO alert_maps (alert_id, mapid) VALUES ($1, $2) ON CONFLICT (alert_id, mapid) DO NOTHING',
+                    [alertId, map.MapUid]
+                );
+            }
+            const { checkMapPositions } = require('./checkMapPositions');
+            const positionResults = await checkMapPositions(mapList.map(m => m.MapUid));
+            for (const r of positionResults) {
+                if (r.found) {
+                    await client.query(
+                        'INSERT INTO map_positions (map_uid, position, score, last_checked) VALUES ($1, $2, $3, NOW()) ON CONFLICT (map_uid) DO NOTHING',
+                        [r.map_uid, r.position, r.score]
+                    );
+                }
+            }
+            console.log(`✅ Background: initialized inaccurate mode for ${username} (${mapCount} maps)`);
+        }
+    } catch (err) {
+        console.warn('Background map count/init failed:', err.message);
     } finally {
         await client.end();
     }
@@ -228,7 +257,7 @@ async function handleCreateAlert(event, headers) {
 
         // Update map count in background (TM Exchange fetch can be slow for many maps)
         if (username) {
-            updateMapCountInBackground(alertId, username).catch(err =>
+            updateMapCountInBackground(alertId, username, alertType).catch(err =>
                 console.warn('Background map count update failed:', err.message)
             );
         }

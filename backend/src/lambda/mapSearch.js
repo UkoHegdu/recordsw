@@ -157,6 +157,8 @@ const fetchMapsAndLeaderboards = async (username, period = null) => {
 // Export for use by scheduler
 exports.fetchMapsAndLeaderboards = fetchMapsAndLeaderboards;
 exports.fetchMapListOnly = fetchMapListOnly;
+exports.getRecordsFromApi = getRecordsFromApi;
+exports.filterRecordsByPeriod = filterRecordsByPeriod;
 
 const { v4: uuidv4 } = require('uuid');
 const mapSearchJobStore = require('../mapSearchJobStore');
