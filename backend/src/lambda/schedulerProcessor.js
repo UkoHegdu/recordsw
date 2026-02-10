@@ -308,6 +308,7 @@ const processInaccurateMode = async (username, client, alertId) => {
         // Sync alert_maps with current map list (new maps since last run)
         const mapList = await fetchMapListOnly(username);
         const currentMapUids = new Set(mapList.map(m => m.MapUid));
+        const mapUidToName = new Map(mapList.map(m => [m.MapUid, m.Name]));
 
         const { rows: existingRows } = await client.query(
             'SELECT mapid FROM alert_maps am JOIN alerts a ON am.alert_id = a.id JOIN users u ON a.user_id = u.id WHERE u.username = $1',
@@ -369,7 +370,8 @@ const processInaccurateMode = async (username, client, alertId) => {
             );
 
             if (positionRows.length === 0) {
-                uninitializedMaps.push({ mapId: result.map_uid, mapName: result.map_uid });
+                const mapName = mapUidToName.get(result.map_uid) || result.map_uid;
+                uninitializedMaps.push({ mapId: result.map_uid, mapName });
                 await client.query(
                     'INSERT INTO map_positions (map_uid, position, score, last_checked) VALUES ($1, $2, $3, NOW())',
                     [result.map_uid, result.position, result.score]
@@ -386,9 +388,10 @@ const processInaccurateMode = async (username, client, alertId) => {
                     [result.position, result.score, result.map_uid]
                 );
 
+                const mapName = mapUidToName.get(result.map_uid) || result.map_uid;
                 positionChanges.push({
                     mapId: result.map_uid,
-                    mapName: result.map_uid
+                    mapName
                 });
             }
         }
