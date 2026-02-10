@@ -1,8 +1,10 @@
-# Recordsw Backend (unified from Lambda)
+# Recordsw Backend (Node/Express, no AWS)
 
-Single Node/Express server that exposes the same REST API as the API Gateway + Lambda setup. All handler code lives in `src/lambda/` (copied from `terraform/lambda/`) so the backend is self-contained.
+Single Node/Express server that exposes the same REST API shape as the old API Gateway + Lambda setup. Handler code lives in `src/lambda/`, but **it runs in-process via Express** – there is **no AWS Lambda / API Gateway / SQS / DynamoDB** involved in this backend.
 
-**Backend vs AWS:** Sessions and map-search jobs use **in-memory** storage in this backend (no DynamoDB/SQS for those). See [DifferencesWithAWS.md](DifferencesWithAWS.md) for details.
+The `lambda` naming is kept only so that files stay 1:1 with the historical Lambda handlers and the Terraform config for reference.
+
+**Backend vs AWS:** Sessions and map-search jobs use **in-memory + Postgres** storage in this backend (no DynamoDB/SQS). See [DifferencesWithAWS.md](DifferencesWithAWS.md) for details.
 
 ## Run locally
 
@@ -47,9 +49,19 @@ Single Node/Express server that exposes the same REST API as the API Gateway + L
 - `GET/POST /api/v1/feedback`, `PUT /api/v1/feedback/:id/read`
 - `GET/POST /api/v1/test`, `GET/POST /api/v1/test-advanced`
 
-## Backend vs terraform
+## Backend vs terraform / AWS
 
-Backend is standalone (no AWS). Handler code in `backend/src/lambda/` is for comparison with `terraform/lambda/` only; nothing is synced. See [DifferencesWithAWS.md](DifferencesWithAWS.md).
+- **Backend is standalone (no AWS)**: Docker / Node / Express / Postgres / system cron.
+- Code in `backend/src/lambda/` keeps the Lambda-style handler signatures but is executed locally via `src/lambdaAdapter.js` and `src/app.js`.
+- Terraform / AWS deployments (if you ever use them again) should look at `terraform/lambda/`; **nothing is auto-synced from this backend to AWS.**
+
+### Project layout (backend only)
+
+- `backend/src/...` – **current backend implementation** (used by `src/server.js` and Docker).
+  - `src/server.js` – entrypoint; starts the Express app.
+  - `src/app.js` – Express app wiring.
+  - `src/routes/*` – Express route definitions that call into `src/lambda/*` handlers.
+  - `src/lambda/*` – migrated handler logic (was originally AWS Lambda).
 
 ## Copying to another branch/repo
 
@@ -61,7 +73,7 @@ Backend already runs daily emails and driver notifications via Postgres + one cr
 
 **What you need:**
 
-1. Run `backend/sql/daily_emails.sql` on Neon.
+1. Run `backend/sql/init.sql` on Neon (this creates `daily_emails`, `map_leaderboard_cache`, and all other tables the backend expects).
 2. Set **CRON_SECRET** (e.g. a random string). Cron calls must send it: `Authorization: Bearer <CRON_SECRET>` or `?secret=<CRON_SECRET>`.
 3. **Email (Gmail):** Set in `.env`: `EMAIL_USER` and `EMAIL_PASS` (Gmail App Password if 2FA is on).
 4. Call `POST /api/v1/cron/daily` once per day (system cron or cron-job.org) with the secret.

@@ -104,10 +104,11 @@ async function formatNewRecords(records) {
             // Normal processing for maps with reasonable number of records
             for (const entry of record.leaderboard) {
                 const playerName = accountIdToName[entry.accountId] || entry.accountId;
-                const date = new Date(entry.timestamp * 1000).toLocaleString();
+                const timestampMs = entry.timestamp < 1e12 ? entry.timestamp * 1000 : entry.timestamp;
+                const date = new Date(timestampMs).toLocaleString();
 
                 formatted += `  🏎️ Player: ${playerName}\n`;
-                formatted += `  📍 Zone: ${entry.zoneName}\n`;
+                formatted += `  🌍 Zone: ${entry.zoneName}\n`;
                 formatted += `  🥇 Position: ${entry.position}\n`;
                 formatted += `  📅 Date: ${date}\n\n`;
             }
