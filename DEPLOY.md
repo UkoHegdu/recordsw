@@ -98,8 +98,8 @@ Ensure `~/app/.env` exists and is correct.
 
 ## Files involved
 
-- `compose.prod.yaml` – backend + frontend + nginx reverse proxy (port 80 only).
-- `deploy/nginx-reverse-proxy.conf` – nginx routes `/api` and `/health` to backend, `/` to frontend.
+- `compose.prod.yaml` – backend + frontend + Caddy reverse proxy (ports 80, 443; auto HTTPS).
+- `deploy/Caddyfile` – Caddy routes `/api` and `/health` to backend, `/` to frontend.
 - `deploy/deploy.sh` – on server: `docker compose -f compose.prod.yaml up -d --build`.
 - `.github/workflows/deploy-hetzner.yml` – on push to `main`: write `.env` from `ENV_FILE_B64`, SSH, pull, run `deploy/deploy.sh`.
 

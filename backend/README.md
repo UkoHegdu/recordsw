@@ -4,7 +4,7 @@ Single Node/Express server that exposes the same REST API shape as the old API G
 
 The `lambda` naming is kept only so that files stay 1:1 with the historical Lambda handlers and the Terraform config for reference.
 
-**Backend vs AWS:** Sessions and map-search jobs use **in-memory + Postgres** storage in this backend (no DynamoDB/SQS). See [DifferencesWithAWS.md](DifferencesWithAWS.md) for details.
+**Backend vs AWS:** No AWS at runtime. Sessions and map-search jobs use in-memory + Postgres. See [DifferencesWithAWS.md](DifferencesWithAWS.md) for details.
 
 ## Run locally
 

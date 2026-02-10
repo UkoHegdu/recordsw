@@ -97,8 +97,8 @@ Sessions are **not** in Postgres; they are in-memory (`sessionStore.js`).
 
 ## Related docs
 
-- [README.md](README.md) – Run locally, routes, env.
-- [DifferencesWithAWS.md](DifferencesWithAWS.md) – Backend vs Lambda/AWS.
-- [DAILY_EMAILS_POSTGRES_CRON.md](DAILY_EMAILS_POSTGRES_CRON.md) – Daily cron and email.
-- [ENV.md](ENV.md) – Env vars and where they are read.
-- [sql/init.sql](sql/init.sql) – Postgres schema for Neon.
+- [backend/README.md](backend/README.md) – Run locally, routes, env.
+- [backend/DifferencesWithAWS.md](backend/DifferencesWithAWS.md) – Backend vs Lambda/AWS (reference).
+- [backend/DAILY_EMAILS_POSTGRES_CRON.md](backend/DAILY_EMAILS_POSTGRES_CRON.md) – Daily cron and email.
+- [backend/ENV.md](backend/ENV.md) – Env vars and where they are read.
+- [backend/sql/init.sql](backend/sql/init.sql) – Postgres schema for Neon.
