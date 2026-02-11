@@ -10,6 +10,7 @@ interface Alert {
     createdAt: string;
     lastTriggered?: string;
     isActive: boolean;
+    recordFilter?: 'top5' | 'wr' | 'all';
 }
 
 interface UserProfile {
@@ -50,6 +51,7 @@ const MapperAlerts: React.FC = () => {
     const [notificationHistory, setNotificationHistory] = useState<NotificationHistory[]>([]);
     const [historyLoading, setHistoryLoading] = useState(false);
     const [isCreatingAlert, setIsCreatingAlert] = useState(false);
+    const [newAlertRecordFilter, setNewAlertRecordFilter] = useState<'top5' | 'wr' | 'all'>('top5');
 
     const fetchUserLoginInfo = async () => {
         try {
@@ -177,6 +179,7 @@ const MapperAlerts: React.FC = () => {
     };
 
     const handleAddAlertClick = () => {
+        setNewAlertRecordFilter('top5');
         setShowAddAlertModal(true);
     };
 
@@ -186,7 +189,8 @@ const MapperAlerts: React.FC = () => {
         try {
             const response = await apiClient.post('/api/v1/users/alerts', {
                 MapCount: 0,
-                alert_type: 'accurate' // Backend creates instantly; map count is updated in background
+                alert_type: 'accurate', // Backend creates instantly; map count is updated in background
+                record_filter: newAlertRecordFilter
             });
 
             if (response.data.auto_switched) {
@@ -206,6 +210,19 @@ const MapperAlerts: React.FC = () => {
 
     const handleCancelAddAlert = () => {
         setShowAddAlertModal(false);
+    };
+
+    const updateAlertRecordFilter = async (alertId: string, nextFilter: 'top5' | 'wr' | 'all') => {
+        const prevAlerts = alerts;
+        setAlerts((current) => current.map(a => a.id === alertId ? { ...a, recordFilter: nextFilter } : a));
+        try {
+            await apiClient.put(`/api/v1/users/alerts/${alertId}`, { record_filter: nextFilter });
+            toast.success('Alert filter updated');
+        } catch (error) {
+            console.error('Error updating alert filter:', error);
+            setAlerts(prevAlerts);
+            toast.error('Failed to update alert filter');
+        }
     };
 
     if (isLoading) {
@@ -319,79 +336,6 @@ const MapperAlerts: React.FC = () => {
                             </div>
                         )}
 
-                        {/* Notification History - Only show if user has alerts */}
-                        {alerts.length > 0 && (
-                            <div className="racing-card">
-                                <h2 className="text-xl font-semibold flex items-center gap-2 mb-4">
-                                    <Clock className="w-5 h-5" />
-                                    Notification History (Last 5 Days)
-                                </h2>
-
-                                {historyLoading ? (
-                                    <div className="flex justify-center py-8">
-                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-3">
-                                        {notificationHistory.map((day, index) => (
-                                            <div key={day.date} className="border border-border rounded-lg p-4">
-                                                <div className="flex justify-between items-center mb-3">
-                                                    <h3 className="font-medium text-foreground">
-                                                        {new Date(day.date).toLocaleDateString('en-US', {
-                                                            weekday: 'long',
-                                                            year: 'numeric',
-                                                            month: 'long',
-                                                            day: 'numeric'
-                                                        })}
-                                                    </h3>
-                                                    <span className="text-xs text-muted-foreground">
-                                                        {index === 0 ? 'Today' : index === 1 ? 'Yesterday' : `${index} days ago`}
-                                                    </span>
-                                                </div>
-
-                                                <div className="space-y-4">
-                                                    {/* Mapper Alerts */}
-                                                    <div className="space-y-2">
-                                                        <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
-                                                            <Bell className="w-4 h-4" />
-                                                            Mapper Alerts
-                                                        </h4>
-                                                        {day.mapper_alert ? (
-                                                            <div className={`p-3 rounded-lg text-sm ${day.mapper_alert.status === 'sent'
-                                                                ? 'bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800'
-                                                                : day.mapper_alert.status === 'no_new_times'
-                                                                    ? 'bg-gray-50 dark:bg-gray-900/40 border border-gray-200 dark:border-gray-700'
-                                                                    : 'bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800'
-                                                                }`}>
-                                                                <p className={`font-medium ${day.mapper_alert.status === 'sent'
-                                                                    ? 'text-green-800 dark:text-green-200'
-                                                                    : day.mapper_alert.status === 'no_new_times'
-                                                                        ? 'text-gray-700 dark:text-gray-300'
-                                                                        : 'text-red-800 dark:text-red-200'
-                                                                    }`}>
-                                                                    {day.mapper_alert.status === 'sent' ? 'Success' : day.mapper_alert.status === 'no_new_times' ? 'No new records' : 'Failed'}
-                                                                </p>
-                                                                {day.mapper_alert.records_found > 0 && (
-                                                                    <p className="text-xs text-muted-foreground mt-1">
-                                                                        {day.mapper_alert.records_found} records found
-                                                                    </p>
-                                                                )}
-                                                            </div>
-                                                        ) : (
-                                                            <div className="text-xs text-muted-foreground italic">
-                                                                No processing data
-                                                            </div>
-                                                        )}
-                                                    </div>
-
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
                         {/* Add Alert Form */}
                         {showAddForm && (
                             <div className="racing-card mb-8">
@@ -480,6 +424,38 @@ const MapperAlerts: React.FC = () => {
                                             </div>
 
                                             <div className="flex items-center gap-2">
+                                                <div className="hidden sm:flex items-center gap-2 mr-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const current = alert.recordFilter || 'top5';
+                                                            const next = current === 'top5' ? 'all' : 'top5';
+                                                            updateAlertRecordFilter(alert.id, next);
+                                                        }}
+                                                        className={`px-3 py-1 rounded-full text-xs font-medium border transition-all duration-300 ${((alert.recordFilter || 'top5') === 'top5')
+                                                            ? 'bg-primary/20 text-primary border-primary/30'
+                                                            : 'bg-muted text-muted-foreground border-border hover:bg-muted/80'
+                                                            }`}
+                                                        aria-pressed={((alert.recordFilter || 'top5') === 'top5')}
+                                                    >
+                                                        Top 5 only
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const current = alert.recordFilter || 'top5';
+                                                            const next = current === 'wr' ? 'all' : 'wr';
+                                                            updateAlertRecordFilter(alert.id, next);
+                                                        }}
+                                                        className={`px-3 py-1 rounded-full text-xs font-medium border transition-all duration-300 ${((alert.recordFilter || 'top5') === 'wr')
+                                                            ? 'bg-primary/20 text-primary border-primary/30'
+                                                            : 'bg-muted text-muted-foreground border-border hover:bg-muted/80'
+                                                            }`}
+                                                        aria-pressed={((alert.recordFilter || 'top5') === 'wr')}
+                                                    >
+                                                        WR only
+                                                    </button>
+                                                </div>
                                                 <div className={`px-3 py-1 rounded-full text-xs font-medium ${alert.isActive
                                                     ? 'bg-primary/20 text-primary border border-primary/30'
                                                     : 'bg-muted text-muted-foreground'
@@ -495,10 +471,118 @@ const MapperAlerts: React.FC = () => {
                                                 </button>
                                             </div>
                                         </div>
+                                        <div className="sm:hidden mt-4 flex flex-wrap gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const current = alert.recordFilter || 'top5';
+                                                    const next = current === 'top5' ? 'all' : 'top5';
+                                                    updateAlertRecordFilter(alert.id, next);
+                                                }}
+                                                className={`px-3 py-1 rounded-full text-xs font-medium border transition-all duration-300 ${((alert.recordFilter || 'top5') === 'top5')
+                                                    ? 'bg-primary/20 text-primary border-primary/30'
+                                                    : 'bg-muted text-muted-foreground border-border hover:bg-muted/80'
+                                                    }`}
+                                                aria-pressed={((alert.recordFilter || 'top5') === 'top5')}
+                                            >
+                                                Top 5 only
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const current = alert.recordFilter || 'top5';
+                                                    const next = current === 'wr' ? 'all' : 'wr';
+                                                    updateAlertRecordFilter(alert.id, next);
+                                                }}
+                                                className={`px-3 py-1 rounded-full text-xs font-medium border transition-all duration-300 ${((alert.recordFilter || 'top5') === 'wr')
+                                                    ? 'bg-primary/20 text-primary border-primary/30'
+                                                    : 'bg-muted text-muted-foreground border-border hover:bg-muted/80'
+                                                    }`}
+                                                aria-pressed={((alert.recordFilter || 'top5') === 'wr')}
+                                            >
+                                                WR only
+                                            </button>
+                                            <div className="text-xs text-muted-foreground self-center">
+                                                {((alert.recordFilter || 'top5') === 'all') ? 'All times' : ((alert.recordFilter || 'top5') === 'top5') ? 'Top 5 filter' : 'WR filter'}
+                                            </div>
+                                        </div>
                                     </div>
                                 ))
                             )}
                         </div>
+
+                        {/* Notification History - Only show if user has alerts */}
+                        {alerts.length > 0 && (
+                            <div className="racing-card">
+                                <h2 className="text-xl font-semibold flex items-center gap-2 mb-4">
+                                    <Clock className="w-5 h-5" />
+                                    Notification History (Last 5 Days)
+                                </h2>
+
+                                {historyLoading ? (
+                                    <div className="flex justify-center py-8">
+                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {notificationHistory.map((day, index) => (
+                                            <div key={day.date} className="border border-border rounded-lg p-4">
+                                                <div className="flex justify-between items-center mb-3">
+                                                    <h3 className="font-medium text-foreground">
+                                                        {new Date(day.date).toLocaleDateString('en-US', {
+                                                            weekday: 'long',
+                                                            year: 'numeric',
+                                                            month: 'long',
+                                                            day: 'numeric'
+                                                        })}
+                                                    </h3>
+                                                    <span className="text-xs text-muted-foreground">
+                                                        {index === 0 ? 'Today' : index === 1 ? 'Yesterday' : `${index} days ago`}
+                                                    </span>
+                                                </div>
+
+                                                <div className="space-y-4">
+                                                    {/* Mapper Alerts */}
+                                                    <div className="space-y-2">
+                                                        <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
+                                                            <Bell className="w-4 h-4" />
+                                                            Mapper Alerts
+                                                        </h4>
+                                                        {day.mapper_alert ? (
+                                                            <div className={`p-3 rounded-lg text-sm ${day.mapper_alert.status === 'sent'
+                                                                ? 'bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800'
+                                                                : day.mapper_alert.status === 'no_new_times'
+                                                                    ? 'bg-gray-50 dark:bg-gray-900/40 border border-gray-200 dark:border-gray-700'
+                                                                    : 'bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800'
+                                                                }`}>
+                                                                <p className={`font-medium ${day.mapper_alert.status === 'sent'
+                                                                    ? 'text-green-800 dark:text-green-200'
+                                                                    : day.mapper_alert.status === 'no_new_times'
+                                                                        ? 'text-gray-700 dark:text-gray-300'
+                                                                        : 'text-red-800 dark:text-red-200'
+                                                                    }`}>
+                                                                    {day.mapper_alert.status === 'sent' ? 'Success' : day.mapper_alert.status === 'no_new_times' ? 'No new records' : 'Failed'}
+                                                                </p>
+                                                                {day.mapper_alert.records_found > 0 && (
+                                                                    <p className="text-xs text-muted-foreground mt-1">
+                                                                        {day.mapper_alert.records_found} records found
+                                                                    </p>
+                                                                )}
+                                                            </div>
+                                                        ) : (
+                                                            <div className="text-xs text-muted-foreground italic">
+                                                                No processing data
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -517,6 +601,41 @@ const MapperAlerts: React.FC = () => {
                                 <p className="text-muted-foreground">
                                     Alerts for new times in <strong>your</strong> maps will be sent out daily at 5am UTC.
                                 </p>
+                                <div className="bg-muted/50 p-4 rounded-xl">
+                                    <h3 className="font-semibold mb-2">What times should be included?</h3>
+                                    <div className="space-y-2 text-sm text-muted-foreground">
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="radio"
+                                                name="recordFilter"
+                                                value="top5"
+                                                checked={newAlertRecordFilter === 'top5'}
+                                                onChange={() => setNewAlertRecordFilter('top5')}
+                                            />
+                                            Top five times (default)
+                                        </label>
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="radio"
+                                                name="recordFilter"
+                                                value="wr"
+                                                checked={newAlertRecordFilter === 'wr'}
+                                                onChange={() => setNewAlertRecordFilter('wr')}
+                                            />
+                                            World record only
+                                        </label>
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="radio"
+                                                name="recordFilter"
+                                                value="all"
+                                                checked={newAlertRecordFilter === 'all'}
+                                                onChange={() => setNewAlertRecordFilter('all')}
+                                            />
+                                            All times
+                                        </label>
+                                    </div>
+                                </div>
                                 <div className="bg-muted/50 p-4 rounded-xl">
                                     <h3 className="font-semibold mb-2">What you'll receive:</h3>
                                     <ul className="text-sm text-muted-foreground space-y-1">

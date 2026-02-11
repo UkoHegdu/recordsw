@@ -211,3 +211,9 @@ create index if not exists idx_feedback_user_id on feedback(user_id);
 -- Run these if your DB was created before a column was added.
 -- ---------------------------------------------------------------------------
 ALTER TABLE feedback ADD COLUMN IF NOT EXISTS read_at timestamp;
+
+-- Mapper alert filtering preference:
+-- top5 = only top 5 times, wr = only world record changes, all = all times.
+ALTER TABLE alerts
+  ADD COLUMN IF NOT EXISTS record_filter VARCHAR(20) NOT NULL DEFAULT 'top5'
+  CHECK (record_filter IN ('top5', 'wr', 'all'));

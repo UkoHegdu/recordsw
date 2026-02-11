@@ -10,6 +10,7 @@ router.get('/maps/status/:jobId', (req, res) => invokeLambda(getHandler('checkJo
 
 router.get('/alerts', (req, res) => invokeLambda(getHandler('create_alert'), req, res));
 router.post('/alerts', (req, res) => invokeLambda(getHandler('create_alert'), req, res));
+router.put('/alerts/:id', (req, res) => invokeLambda(getHandler('create_alert'), req, res));
 router.delete('/alerts/:id', (req, res) => invokeLambda(getHandler('create_alert'), req, res));
 
 router.post('/login', (req, res) => invokeLambda(getHandler('login'), req, res));

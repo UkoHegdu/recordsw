@@ -126,6 +126,25 @@ async function saveDailyEmail(username, email, mapperContent) {
     console.log(`✅ Email body saved to daily_emails for user ${username}`);
 }
 
+const applyRecordFilterToMaps = (records, recordFilter) => {
+    const filter = (entry) => {
+        const pos = Number(entry?.position);
+        if (!Number.isFinite(pos)) return false;
+        if (recordFilter === 'top5') return pos <= 5;
+        if (recordFilter === 'wr') return pos === 1;
+        return true; // 'all'
+    };
+
+    if (!Array.isArray(records) || recordFilter === 'all') return records || [];
+
+    return records
+        .map(r => ({
+            ...r,
+            leaderboard: Array.isArray(r.leaderboard) ? r.leaderboard.filter(filter) : []
+        }))
+        .filter(r => Array.isArray(r.leaderboard) && r.leaderboard.length > 0);
+};
+
 // Process map alert check (Phase 1) with caching and alert type support
 const processMapAlertCheck = async (username, email) => {
     console.log(`🔍 Phase 1: Checking map alerts for ${username}...`);
@@ -149,13 +168,29 @@ const processMapAlertCheck = async (username, email) => {
 
         // Get user's alert type and id
         const alertQuery = `
-            SELECT a.id, a.alert_type, a.map_count
+            SELECT a.id, a.alert_type, a.map_count, a.record_filter
             FROM alerts a
             JOIN users u ON a.user_id = u.id
             WHERE u.username = $1
         `;
 
-        const { rows: alertRows } = await client.query(alertQuery, [username]);
+        let alertRows;
+        try {
+            ({ rows: alertRows } = await client.query(alertQuery, [username]));
+        } catch (err) {
+            // Backwards-compatible fallback if DB migration hasn't been applied yet.
+            if (String(err?.message || '').includes('record_filter')) {
+                const fallbackQuery = `
+                    SELECT a.id, a.alert_type, a.map_count
+                    FROM alerts a
+                    JOIN users u ON a.user_id = u.id
+                    WHERE u.username = $1
+                `;
+                ({ rows: alertRows } = await client.query(fallbackQuery, [username]));
+            } else {
+                throw err;
+            }
+        }
 
         if (alertRows.length === 0) {
             console.log(`ℹ️ No alerts found for ${username}`);
@@ -163,7 +198,8 @@ const processMapAlertCheck = async (username, email) => {
             return { success: true, recordsFound: 0, phase: 1 };
         }
 
-        const { id: alertId, alert_type, map_count } = alertRows[0];
+        const { id: alertId, alert_type, map_count, record_filter } = alertRows[0];
+        const recordFilter = record_filter || 'top5';
         console.log(`📊 User ${username} has ${map_count} maps with ${alert_type} mode`);
 
         let finalAlertType = alert_type;
@@ -222,6 +258,7 @@ const processMapAlertCheck = async (username, email) => {
             // Traditional accurate mode - fetch full leaderboards
             console.log(`🎯 Processing ${username} in accurate mode`);
             newRecords = await fetchMapsAndLeaderboards(username, '1d');
+            newRecords = applyRecordFilterToMaps(newRecords, recordFilter);
 
             // Cache leaderboard data for each map
             for (const record of newRecords) {
@@ -239,11 +276,18 @@ const processMapAlertCheck = async (username, email) => {
             // Inaccurate mode - use position API
             console.log(`⚡ Processing ${username} in inaccurate mode`);
             const inaccurateResult = await processInaccurateMode(username, client, alertId);
-            newRecords = inaccurateResult.records;
+            newRecords = applyRecordFilterToMaps(inaccurateResult.records, recordFilter);
             inaccurateOverflowCount = inaccurateResult.overflowMapCount || 0;
 
             if (inaccurateOverflowCount > 0) {
-                mapperContent = `${INACCURATE_OVERFLOW_MESSAGE} (${inaccurateOverflowCount} maps)`;
+                // If user enabled strict filtering, we can't reliably apply it in overflow mode
+                // because we intentionally skip fetching leaderboards for too many maps.
+                if (recordFilter === 'all') {
+                    mapperContent = `${INACCURATE_OVERFLOW_MESSAGE} (${inaccurateOverflowCount} maps)`;
+                } else {
+                    console.log(`ℹ️ Overflow hit for ${username}; skipping mapper email due to record_filter=${recordFilter}`);
+                    mapperContent = '';
+                }
             } else if (newRecords.length > 0) {
                 console.log(`📊 Found ${newRecords.length} new records for ${username}`);
                 mapperContent = await formatNewRecords(newRecords);
@@ -256,8 +300,10 @@ const processMapAlertCheck = async (username, email) => {
 
         await saveDailyEmail(username, email, mapperContent);
 
-        const recordsForLog = newRecords.length > 0 ? newRecords.length : inaccurateOverflowCount;
-        const hasMapperNotification = newRecords.length > 0 || inaccurateOverflowCount > 0;
+        const hasMapperNotification = mapperContent && mapperContent.trim().length > 0;
+        const recordsForLog = hasMapperNotification
+            ? (newRecords.length > 0 ? newRecords.length : inaccurateOverflowCount)
+            : 0;
         await logNotificationHistory(username, 'mapper_alert',
             hasMapperNotification ? 'sent' : 'no_new_times',
             hasMapperNotification ? `Notification sent for ${recordsForLog} map(s)!` : 'No new notifications were sent',

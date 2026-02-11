@@ -42,7 +42,7 @@ exports.handler = async (event, context) => {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
-        'Access-Control-Allow-Methods': 'GET,POST,DELETE,OPTIONS',
+        'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
         'X-Content-Type-Options': 'nosniff',
         'X-Frame-Options': 'DENY',
         'X-XSS-Protection': '1; mode=block',
@@ -58,6 +58,11 @@ exports.handler = async (event, context) => {
     // Handle POST request - create alert
     if (httpMethod === 'POST') {
         return await handleCreateAlert(event, headers);
+    }
+
+    // Handle PUT request - update alert settings
+    if (httpMethod === 'PUT') {
+        return await handleUpdateAlert(event, headers);
     }
 
     // Handle DELETE request - remove alert
@@ -82,6 +87,13 @@ exports.handler = async (event, context) => {
 };
 
 const AUTO_INACCURATE_MAP_THRESHOLD = 100;
+const ALLOWED_RECORD_FILTERS = new Set(['top5', 'wr', 'all']);
+
+function normalizeRecordFilter(value) {
+    if (!value) return 'top5';
+    const v = String(value).trim().toLowerCase();
+    return ALLOWED_RECORD_FILTERS.has(v) ? v : null;
+}
 
 /** Run after response is sent: fetch map count from TM Exchange and update the alert. */
 async function updateMapCountInBackground(alertId, username, alertType = 'accurate') {
@@ -146,16 +158,30 @@ async function handleGetAlerts(event, headers) {
         await client.connect();
         console.log('✅ Connected to Neon database');
 
-        const result = await client.query(
-            'SELECT id, username, email, created_at FROM alerts WHERE user_id = $1 ORDER BY created_at DESC',
-            [userId]
-        );
+        let result;
+        try {
+            result = await client.query(
+                'SELECT id, username, email, created_at, record_filter FROM alerts WHERE user_id = $1 ORDER BY created_at DESC',
+                [userId]
+            );
+        } catch (err) {
+            // Backwards-compatible fallback if DB migration hasn't been applied yet.
+            if (String(err?.message || '').includes('record_filter')) {
+                result = await client.query(
+                    'SELECT id, username, email, created_at FROM alerts WHERE user_id = $1 ORDER BY created_at DESC',
+                    [userId]
+                );
+            } else {
+                throw err;
+            }
+        }
 
         const alerts = result.rows.map(row => ({
             id: row.id.toString(),
             mapName: `${row.username}'s map alerts`,
             mapId: `map_${row.id}`, // Placeholder
             createdAt: row.created_at,
+            recordFilter: row.record_filter || 'top5',
             isActive: true
         }));
 
@@ -245,12 +271,26 @@ async function handleCreateAlert(event, headers) {
 
         const alertType = body.alert_type || 'accurate';
         const initialMapCount = body.MapCount ?? 0;
+        const recordFilter = normalizeRecordFilter(body.record_filter) || 'top5';
 
         // Insert alert immediately so the user gets a fast response
-        const alertResult = await client.query(
-            'INSERT INTO alerts (username, email, user_id, alert_type, map_count, created_at) VALUES ($1, $2, $3, $4, $5, NOW()) RETURNING id',
-            [username, email, userId, alertType, initialMapCount]
-        );
+        let alertResult;
+        try {
+            alertResult = await client.query(
+                'INSERT INTO alerts (username, email, user_id, alert_type, map_count, record_filter, created_at) VALUES ($1, $2, $3, $4, $5, $6, NOW()) RETURNING id',
+                [username, email, userId, alertType, initialMapCount, recordFilter]
+            );
+        } catch (err) {
+            // Backwards-compatible fallback if DB migration hasn't been applied yet.
+            if (String(err?.message || '').includes('record_filter')) {
+                alertResult = await client.query(
+                    'INSERT INTO alerts (username, email, user_id, alert_type, map_count, created_at) VALUES ($1, $2, $3, $4, $5, NOW()) RETURNING id',
+                    [username, email, userId, alertType, initialMapCount]
+                );
+            } else {
+                throw err;
+            }
+        }
 
         const alertId = alertResult.rows[0].id;
         console.log(`✅ Alert created successfully for user ${userId} with ID ${alertId}`);
@@ -270,7 +310,8 @@ async function handleCreateAlert(event, headers) {
                 msg: 'Alert created successfully',
                 alert_id: alertId,
                 alert_type: alertType,
-                map_count: initialMapCount
+                map_count: initialMapCount,
+                record_filter: recordFilter
             })
         };
 
@@ -284,6 +325,81 @@ async function handleCreateAlert(event, headers) {
     } finally {
         await client.end();
         console.log('🔌 Database connection closed');
+    }
+}
+
+async function handleUpdateAlert(event, headers) {
+    console.log('✏️ Updating alert...');
+
+    const alertId = event.pathParameters?.id;
+    if (!alertId) {
+        return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({ msg: 'Alert ID is required' })
+        };
+    }
+
+    const userId = getUserIdFromToken(event);
+    if (!userId) {
+        return {
+            statusCode: 401,
+            headers,
+            body: JSON.stringify({ msg: 'Unauthorized - invalid or missing token' })
+        };
+    }
+
+    let body;
+    try {
+        body = JSON.parse(event.body || '{}');
+    } catch (error) {
+        console.error('Error parsing request body:', error);
+        return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({ msg: 'Invalid JSON in request body' })
+        };
+    }
+
+    const recordFilter = normalizeRecordFilter(body.record_filter);
+    if (!recordFilter) {
+        return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({ msg: 'Invalid record_filter. Allowed: top5, wr, all' })
+        };
+    }
+
+    const client = getDbConnection();
+    try {
+        await client.connect();
+        const result = await client.query(
+            'UPDATE alerts SET record_filter = $1 WHERE id = $2 AND user_id = $3',
+            [recordFilter, alertId, userId]
+        );
+
+        if (result.rowCount === 0) {
+            return {
+                statusCode: 404,
+                headers,
+                body: JSON.stringify({ msg: 'Alert not found or not authorized' })
+            };
+        }
+
+        return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify({ success: true, record_filter: recordFilter })
+        };
+    } catch (err) {
+        console.error('❌ Update alert error:', err);
+        return {
+            statusCode: 500,
+            headers,
+            body: JSON.stringify({ msg: 'Failed to update alert' })
+        };
+    } finally {
+        await client.end();
     }
 }
 
