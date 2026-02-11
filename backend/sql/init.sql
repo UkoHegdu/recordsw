@@ -217,3 +217,7 @@ ALTER TABLE feedback ADD COLUMN IF NOT EXISTS read_at timestamp;
 ALTER TABLE alerts
   ADD COLUMN IF NOT EXISTS record_filter VARCHAR(20) NOT NULL DEFAULT 'top5'
   CHECK (record_filter IN ('top5', 'wr', 'all'));
+
+-- Optional (but useful): allow admin handler to stamp updates.
+ALTER TABLE alerts
+  ADD COLUMN IF NOT EXISTS updated_at timestamp default now();

@@ -1,5 +1,7 @@
 // lambda/updateUserAlertType.js - Update user alert type (admin only)
 const { Client } = require('pg');
+const { fetchMapListOnly } = require('./mapSearch');
+const { checkMapPositions } = require('./checkMapPositions');
 
 exports.handler = async (event, context) => {
     console.log('🔄 Update User Alert Type Lambda triggered!', event);
@@ -14,7 +16,7 @@ exports.handler = async (event, context) => {
                     'Content-Type': 'application/json',
                     'Access-Control-Allow-Origin': '*',
                     'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
-                    'Access-Control-Allow-Methods': 'GET,POST,OPTIONS'
+                    'Access-Control-Allow-Methods': 'GET,POST,PUT,OPTIONS'
                 },
                 body: JSON.stringify({ error: 'Authorization header required' })
             };
@@ -32,7 +34,7 @@ exports.handler = async (event, context) => {
                         'Content-Type': 'application/json',
                         'Access-Control-Allow-Origin': '*',
                         'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
-                        'Access-Control-Allow-Methods': 'GET,POST,OPTIONS'
+                    'Access-Control-Allow-Methods': 'GET,POST,PUT,OPTIONS'
                     },
                     body: JSON.stringify({ error: 'Admin access required' })
                 };
@@ -44,7 +46,7 @@ exports.handler = async (event, context) => {
                     'Content-Type': 'application/json',
                     'Access-Control-Allow-Origin': '*',
                     'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
-                    'Access-Control-Allow-Methods': 'GET,POST,OPTIONS'
+                    'Access-Control-Allow-Methods': 'GET,POST,PUT,OPTIONS'
                 },
                 body: JSON.stringify({ error: 'Invalid token' })
             };
@@ -61,7 +63,7 @@ exports.handler = async (event, context) => {
                     'Content-Type': 'application/json',
                     'Access-Control-Allow-Origin': '*',
                     'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
-                    'Access-Control-Allow-Methods': 'GET,POST,OPTIONS'
+                'Access-Control-Allow-Methods': 'GET,POST,PUT,OPTIONS'
                 },
                 body: JSON.stringify({ error: 'user_id and alert_type are required' })
             };
@@ -74,7 +76,7 @@ exports.handler = async (event, context) => {
                     'Content-Type': 'application/json',
                     'Access-Control-Allow-Origin': '*',
                     'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
-                    'Access-Control-Allow-Methods': 'GET,POST,OPTIONS'
+                'Access-Control-Allow-Methods': 'GET,POST,PUT,OPTIONS'
                 },
                 body: JSON.stringify({ error: 'alert_type must be "accurate" or "inaccurate"' })
             };
@@ -112,7 +114,7 @@ exports.handler = async (event, context) => {
                         'Content-Type': 'application/json',
                         'Access-Control-Allow-Origin': '*',
                         'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
-                        'Access-Control-Allow-Methods': 'GET,POST,OPTIONS'
+                        'Access-Control-Allow-Methods': 'GET,POST,PUT,OPTIONS'
                     },
                     body: JSON.stringify({ error: 'User not found' })
                 };
@@ -127,11 +129,13 @@ exports.handler = async (event, context) => {
                         'Content-Type': 'application/json',
                         'Access-Control-Allow-Origin': '*',
                         'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
-                        'Access-Control-Allow-Methods': 'GET,POST,OPTIONS'
+                        'Access-Control-Allow-Methods': 'GET,POST,PUT,OPTIONS'
                     },
                     body: JSON.stringify({ error: 'User has no alerts configured' })
                 };
             }
+
+            const shouldInitInaccurate = user.current_type !== 'inaccurate' && alert_type === 'inaccurate';
 
             // If switching from inaccurate to accurate, clean up position data
             if (user.current_type === 'inaccurate' && alert_type === 'accurate') {
@@ -162,7 +166,7 @@ exports.handler = async (event, context) => {
             // Update alert type
             const updateQuery = `
                 UPDATE alerts 
-                SET alert_type = $1, updated_at = NOW()
+                SET alert_type = $1
                 WHERE user_id = $2
                 RETURNING alert_type, map_count
             `;
@@ -175,6 +179,51 @@ exports.handler = async (event, context) => {
 
             const updatedAlert = updateRows[0];
 
+            // Initialize inaccurate mode baseline (alert_maps + map_positions) in background.
+            // This prevents long admin requests while ensuring inaccurate mode works.
+            if (shouldInitInaccurate) {
+                const alertId = user.alert_id;
+                const username = user.username;
+                setImmediate(async () => {
+                    const bgClient = getDbConnection();
+                    try {
+                        console.log(`🚀 Background init inaccurate mode for ${username} (alert_id=${alertId})`);
+                        const mapList = await fetchMapListOnly(username);
+                        const mapUids = mapList.map(m => m.MapUid).filter(Boolean);
+
+                        await bgClient.connect();
+
+                        // Persist map_count for admin panel / scheduler decisions
+                        await bgClient.query('UPDATE alerts SET map_count = $1 WHERE id = $2', [mapUids.length, alertId]);
+
+                        // Ensure alert_maps is populated
+                        for (const mapUid of mapUids) {
+                            await bgClient.query(
+                                'INSERT INTO alert_maps (alert_id, mapid) VALUES ($1, $2) ON CONFLICT (alert_id, mapid) DO NOTHING',
+                                [alertId, mapUid]
+                            );
+                        }
+
+                        // Initialize map_positions baseline
+                        const positionResults = await checkMapPositions(mapUids);
+                        for (const r of positionResults) {
+                            if (r && r.found) {
+                                await bgClient.query(
+                                    'INSERT INTO map_positions (map_uid, position, score, last_checked) VALUES ($1, $2, $3, NOW()) ON CONFLICT (map_uid) DO NOTHING',
+                                    [r.map_uid, r.position, r.score]
+                                );
+                            }
+                        }
+
+                        console.log(`✅ Background init complete for ${username}: ${mapUids.length} maps`);
+                    } catch (e) {
+                        console.error(`❌ Background init failed for ${user?.username || user_id}:`, e?.message || e);
+                    } finally {
+                        try { await bgClient.end(); } catch (_) { }
+                    }
+                });
+            }
+
             await client.end();
 
             return {
@@ -183,14 +232,15 @@ exports.handler = async (event, context) => {
                     'Content-Type': 'application/json',
                     'Access-Control-Allow-Origin': '*',
                     'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
-                    'Access-Control-Allow-Methods': 'GET,POST,OPTIONS'
+                    'Access-Control-Allow-Methods': 'GET,POST,PUT,OPTIONS'
                 },
                 body: JSON.stringify({
                     message: 'User alert type updated successfully',
                     user_id: user_id,
                     username: user.username,
                     alert_type: updatedAlert.alert_type,
-                    map_count: updatedAlert.map_count
+                    map_count: updatedAlert.map_count,
+                    init_inaccurate_started: shouldInitInaccurate
                 })
             };
 
@@ -207,7 +257,7 @@ exports.handler = async (event, context) => {
                 'Content-Type': 'application/json',
                 'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
-                'Access-Control-Allow-Methods': 'GET,POST,OPTIONS'
+                'Access-Control-Allow-Methods': 'GET,POST,PUT,OPTIONS'
             },
             body: JSON.stringify({
                 error: 'Internal Server Error',

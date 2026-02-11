@@ -428,9 +428,7 @@ const MapperAlerts: React.FC = () => {
                                                     <button
                                                         type="button"
                                                         onClick={() => {
-                                                            const current = alert.recordFilter || 'top5';
-                                                            const next = current === 'top5' ? 'all' : 'top5';
-                                                            updateAlertRecordFilter(alert.id, next);
+                                                            updateAlertRecordFilter(alert.id, 'top5');
                                                         }}
                                                         className={`px-3 py-1 rounded-full text-xs font-medium border transition-all duration-300 ${((alert.recordFilter || 'top5') === 'top5')
                                                             ? 'bg-primary/20 text-primary border-primary/30'
@@ -443,9 +441,7 @@ const MapperAlerts: React.FC = () => {
                                                     <button
                                                         type="button"
                                                         onClick={() => {
-                                                            const current = alert.recordFilter || 'top5';
-                                                            const next = current === 'wr' ? 'all' : 'wr';
-                                                            updateAlertRecordFilter(alert.id, next);
+                                                            updateAlertRecordFilter(alert.id, 'wr');
                                                         }}
                                                         className={`px-3 py-1 rounded-full text-xs font-medium border transition-all duration-300 ${((alert.recordFilter || 'top5') === 'wr')
                                                             ? 'bg-primary/20 text-primary border-primary/30'
@@ -455,12 +451,17 @@ const MapperAlerts: React.FC = () => {
                                                     >
                                                         WR only
                                                     </button>
-                                                </div>
-                                                <div className={`px-3 py-1 rounded-full text-xs font-medium ${alert.isActive
-                                                    ? 'bg-primary/20 text-primary border border-primary/30'
-                                                    : 'bg-muted text-muted-foreground'
-                                                    }`}>
-                                                    {alert.isActive ? 'Active' : 'Inactive'}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => updateAlertRecordFilter(alert.id, 'all')}
+                                                        className={`px-3 py-1 rounded-full text-xs font-medium border transition-all duration-300 ${((alert.recordFilter || 'top5') === 'all')
+                                                            ? 'bg-primary/20 text-primary border-primary/30'
+                                                            : 'bg-muted text-muted-foreground border-border hover:bg-muted/80'
+                                                            }`}
+                                                        aria-pressed={((alert.recordFilter || 'top5') === 'all')}
+                                                    >
+                                                        All times
+                                                    </button>
                                                 </div>
 
                                                 <button
@@ -475,9 +476,7 @@ const MapperAlerts: React.FC = () => {
                                             <button
                                                 type="button"
                                                 onClick={() => {
-                                                    const current = alert.recordFilter || 'top5';
-                                                    const next = current === 'top5' ? 'all' : 'top5';
-                                                    updateAlertRecordFilter(alert.id, next);
+                                                    updateAlertRecordFilter(alert.id, 'top5');
                                                 }}
                                                 className={`px-3 py-1 rounded-full text-xs font-medium border transition-all duration-300 ${((alert.recordFilter || 'top5') === 'top5')
                                                     ? 'bg-primary/20 text-primary border-primary/30'
@@ -490,9 +489,7 @@ const MapperAlerts: React.FC = () => {
                                             <button
                                                 type="button"
                                                 onClick={() => {
-                                                    const current = alert.recordFilter || 'top5';
-                                                    const next = current === 'wr' ? 'all' : 'wr';
-                                                    updateAlertRecordFilter(alert.id, next);
+                                                    updateAlertRecordFilter(alert.id, 'wr');
                                                 }}
                                                 className={`px-3 py-1 rounded-full text-xs font-medium border transition-all duration-300 ${((alert.recordFilter || 'top5') === 'wr')
                                                     ? 'bg-primary/20 text-primary border-primary/30'
@@ -502,9 +499,17 @@ const MapperAlerts: React.FC = () => {
                                             >
                                                 WR only
                                             </button>
-                                            <div className="text-xs text-muted-foreground self-center">
-                                                {((alert.recordFilter || 'top5') === 'all') ? 'All times' : ((alert.recordFilter || 'top5') === 'top5') ? 'Top 5 filter' : 'WR filter'}
-                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => updateAlertRecordFilter(alert.id, 'all')}
+                                                className={`px-3 py-1 rounded-full text-xs font-medium border transition-all duration-300 ${((alert.recordFilter || 'top5') === 'all')
+                                                    ? 'bg-primary/20 text-primary border-primary/30'
+                                                    : 'bg-muted text-muted-foreground border-border hover:bg-muted/80'
+                                                    }`}
+                                                aria-pressed={((alert.recordFilter || 'top5') === 'all')}
+                                            >
+                                                All times
+                                            </button>
                                         </div>
                                     </div>
                                 ))
