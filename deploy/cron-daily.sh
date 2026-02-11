@@ -25,7 +25,8 @@ if [[ -z "$CRON_SECRET" ]]; then
 fi
 
 log "Starting cron-daily"
-if OUTPUT=$(curl -s -S -X POST -H "Authorization: Bearer $CRON_SECRET" "http://localhost/api/v1/cron/daily" 2>&1); then
+# Use https - Caddy redirects http to https. -k skips cert verify for localhost (cert is for tmrecords.mooo.com).
+if OUTPUT=$(curl -s -S -k -X POST -H "Authorization: Bearer $CRON_SECRET" "https://localhost/api/v1/cron/daily" 2>&1); then
   log "OK: $OUTPUT"
 else
   log_err "curl failed: $OUTPUT"
