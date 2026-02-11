@@ -5,6 +5,8 @@
 set -e
 cd "$(dirname "$0")/.."
 
+chmod +x deploy/cron-daily.sh
+
 echo "Building and starting containers..."
 docker compose -f compose.prod.yaml up -d --build
 
